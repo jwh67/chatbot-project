@@ -1,0 +1,53 @@
+# Byte-compiled Python files
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+
+# Virtual environments
+venv/
+mlflow-env/
+
+# Docker files
+*.env
+.dockerignore
+
+# Logs
+*.log
+*.out
+*.err
+
+# MySQL data (if you store it locally)
+mysql-data/
+
+# MLflow artifacts
+mlflow-artifacts/
+
+# Data files
+*.sqlite3
+*.db
+*.dat
+*.sql
+
+# Test reports
+.junit/
+.coverage
+htmlcov/
+
+# IDE-specific files
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS-specific files
+.DS_Store
+Thumbs.db
+
+# Cache and temporary files
+*.tmp
+*.bak
+*.old
+*.orig
+*.retry
+*.cache
