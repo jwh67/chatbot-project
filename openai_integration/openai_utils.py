@@ -1,7 +1,8 @@
 import openai
+import os
 
-# Set your OpenAI API key
-openai.api_key = "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"
+# Set your OpenAI API key from an environment variable
+openai.api_key = os.getenv("OPENAI_API_KEY")
 
 def get_openai_response(query):
     try:
