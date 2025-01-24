@@ -40,6 +40,7 @@ htmlcov/
 *.swp
 *.swo
 
+
 # OS-specific files
 .DS_Store
 Thumbs.db
@@ -51,3 +52,7 @@ Thumbs.db
 *.orig
 *.retry
 *.cache
+
+# Ignore .env file
+.env
+

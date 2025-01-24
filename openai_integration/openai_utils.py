@@ -1,19 +1,41 @@
-import openai
+from openai import OpenAI
+from dotenv import load_dotenv
 import os
 
-# Set your OpenAI API key from an environment variable
-openai.api_key = os.getenv("OPENAI_API_KEY")
+# Load environment variables
+load_dotenv()
+
+# Create an OpenAI client instance
+client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 
 def get_openai_response(query):
     try:
-        # Optimize token usage
-        response = openai.Completion.create(
-            engine="text-davinci-003",
-            prompt=f"Respond briefly to: {query}",
-            max_tokens=100,  # Limit response length
-            temperature=0.7  # Control creativity
+        # Correct usage with the OpenAI client
+        response = client.chat.completions.create(
+            model="gpt-4",  # Replace with "gpt-4" if available in your plan
+            messages=[
+                {"role": "system", "content": "You are a helpful assistant."},
+                {"role": "user", "content": query},
+            ],
+            max_tokens=150,
+            temperature=0.7
         )
-        return response.choices[0].text.strip()
-    except Exception as e:
+        return response.choices[0].message.content.strip()
+
+    # Handle specific OpenAI errors
+    except client.error.AuthenticationError as e:
+        print(f"Authentication error: {e}")
+        return "Authentication error: Please check your API key."
+    except client.error.RateLimitError as e:
+        print(f"Rate limit error: {e}")
+        return "Rate limit error: You've exceeded your usage limit."
+    except client.error.OpenAIError as e:
         print(f"OpenAI API error: {e}")
-        return "I'm sorry, I encountered an error processing your query."
+        return f"OpenAI API error: {e}"
+    except Exception as e:
+        # Handle any unexpected errors
+        print(f"Unexpected error: {e}")
+        return f"Unexpected error: {e}"
+
+
+
