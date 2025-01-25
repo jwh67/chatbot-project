@@ -33,6 +33,7 @@ mlflow-artifacts/
 .junit/
 .coverage
 htmlcov/
+apptest.py
 
 # IDE-specific files
 .vscode/
