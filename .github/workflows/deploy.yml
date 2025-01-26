@@ -22,7 +22,11 @@ jobs:
         run: |
           python3 -m pip install --upgrade pip
           python3 -m pip install -r requirements.txt
-
+            
+      - name: List files and directories
+        run: |
+          ls -R
+    
       - name: Run pytest
         run: |
           pytest chatbot-api/tests
