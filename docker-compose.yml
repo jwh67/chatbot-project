@@ -1,0 +1,31 @@
+version: '3.8'
+services:
+  chatbot:
+    build: ./chatbot-api
+    ports:
+      - "5000:5000"
+    depends_on:
+      - mysql
+      - manticore
+
+  mysql:
+    image: mysql:latest
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: chatbot
+    volumes:
+      - mysql-data:/var/lib/mysql
+
+  manticore:
+    image: manticoresearch/manticore:latest
+    ports:
+      - "9306:9306"
+      - "9312:9312"
+
+  mlflow:
+    build: ./mlflow
+    ports:
+      - "5001:5000"
+
+volumes:
+  mysql-data:
