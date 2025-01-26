@@ -3,7 +3,10 @@ name: CI/CD Pipeline
 on:
   push:
     branches:
-      - main
+      - development  # Change to 'development'
+  pull_request:
+    branches:
+      - development
 
 jobs:
   test:
@@ -13,7 +16,7 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v3
 
-      - name: Set up Python 3.10
+      - name: Set up Python
         uses: actions/setup-python@v4
         with:
           python-version: '3.10'
@@ -23,11 +26,7 @@ jobs:
           python3 -m pip install --upgrade pip
           python3 -m pip install -r requirements.txt
 
-      - name: Debug file structure
-        run: |
-          echo "Current directory: $(pwd)"
-          ls -R
-
       - name: Run pytest
         run: |
           pytest
+
