@@ -5,37 +5,38 @@ import os
 # Load environment variables
 load_dotenv()
 
-# Create an OpenAI client instance
-client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+# Initialize OpenAI client
+client = OpenAI()
+client.api_key = os.getenv("OPENAI_API_KEY")  # Ensure the API key is loaded correctly
 
 def get_openai_response(query):
+    """
+    Get a response from OpenAI's ChatCompletion API using the updated library structure.
+    """
     try:
-        # Correct usage with the OpenAI client
         response = client.chat.completions.create(
-            model="gpt-4",  # Replace with "gpt-4" if available in your plan
+            model="gpt-3.5-turbo",
             messages=[
                 {"role": "system", "content": "You are a helpful assistant."},
                 {"role": "user", "content": query},
             ],
-            max_tokens=150,
-            temperature=0.7
         )
         return response.choices[0].message.content.strip()
-
-    # Handle specific OpenAI errors
-    except client.error.AuthenticationError as e:
-        print(f"Authentication error: {e}")
-        return "Authentication error: Please check your API key."
-    except client.error.RateLimitError as e:
-        print(f"Rate limit error: {e}")
-        return "Rate limit error: You've exceeded your usage limit."
-    except client.error.OpenAIError as e:
-        print(f"OpenAI API error: {e}")
-        return f"OpenAI API error: {e}"
     except Exception as e:
-        # Handle any unexpected errors
-        print(f"Unexpected error: {e}")
-        return f"Unexpected error: {e}"
+        print(f"Error fetching ChatCompletion: {e}")
+        return None
 
-
+def get_openai_embedding(text):
+    """
+    Get an embedding for a given text using OpenAI's Embedding API.
+    """
+    try:
+        embedding_response = client.embeddings.create(
+            model="text-embedding-ada-002",
+            input=text,
+        )
+        return embedding_response.data[0].embedding
+    except Exception as e:
+        print(f"Error fetching embedding: {e}")
+        return None
 

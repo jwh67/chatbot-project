@@ -34,6 +34,7 @@ mlflow-artifacts/
 .coverage
 htmlcov/
 apptest.py
+test_openai_standalone.py
 
 # IDE-specific files
 .vscode/
