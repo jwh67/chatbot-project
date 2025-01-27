@@ -4,6 +4,7 @@ from openai_integration.openai_utils import get_openai_response, get_openai_embe
 from chromadb.config import Settings
 import chromadb
 import json
+import re
 
 # Initialize Flask app
 app = Flask(__name__)
@@ -17,16 +18,46 @@ collection = chroma_client.get_or_create_collection(name="chatbot_embeddings")
 with open("intents/responses.json") as f:
     intents = json.load(f)
 
+def sanitize_and_validate_input(user_query):
+    """
+    Sanitize and validate the user query to ensure it is safe and appropriate.
+    """
+    # Remove leading/trailing whitespaces
+    user_query = user_query.strip()
+
+    # Reject empty or very short queries
+    if not user_query or len(user_query) < 3:
+        return False, "Query must be at least 3 characters long."
+
+    # Prevent illegal or inappropriate queries using a predefined list of blocked terms
+    blocked_terms = ["illegal", "hack", "exploit", "bypass", "violate"]
+    if any(term in user_query.lower() for term in blocked_terms):
+        return False, "Query contains prohibited content."
+
+    # Additional sanitization (e.g., removing special characters)
+    user_query = re.sub(r'[^\w\s]', '', user_query)
+
+    # Return sanitized input and success flag
+    return True, user_query
+
+def validate_embedding_dimension(embedding, expected_dim=1536):
+    """
+    Validate the dimension of the embedding to match the expected dimensionality.
+    """
+    if len(embedding) != expected_dim:
+        raise ValueError(f"Invalid embedding dimension: {len(embedding)}. Expected {expected_dim}.")
+
 @app.route('/query', methods=['POST'])
 def handle_query():
     data = request.json
     user_query = data.get("query")
 
-    # Validate user query
-    if not user_query or not user_query.strip():
-        return jsonify({"error": "Query is required and cannot be empty."}), 400
+    # Validate and sanitize user query
+    is_valid, sanitized_query = sanitize_and_validate_input(user_query)
+    if not is_valid:
+        return jsonify({"error": sanitized_query}), 400
 
-    user_query = user_query.strip()
+    user_query = sanitized_query  # Use sanitized input moving forward
     cursor = conn.cursor(dictionary=True)
 
     # Step 1: Check MySQL for a cached response
@@ -58,8 +89,8 @@ def handle_query():
                     response = get_openai_response(user_query)
                     embedding = get_openai_embedding(user_query)
 
-                    if embedding is None:
-                        raise ValueError("Failed to generate embedding for the query.")
+                    # Validate embedding dimension before storing
+                    validate_embedding_dimension(embedding)
 
                     # Store the new embedding and response in Chroma
                     collection.add(
