@@ -3,3 +3,4 @@ mysql-connector-python
 openai
 pytest
 chromadb
+pytest-asyncio
