@@ -89,7 +89,14 @@ def handle_query():
                     response = get_openai_response(user_query)
                     embedding = get_openai_embedding(user_query)
 
-                    # Validate embedding dimension before storing
+                    # Prevent adding embeddings with incorrect dimensions
+                    if len(embedding) != 1536:  # Replace 1536 with the expected dimension
+                        raise ValueError(f"Invalid embedding dimension: {len(embedding)}. Expected 1536.")
+
+                    # Log the embedding dimension for debugging
+                    print(f"Generated embedding dimension: {len(embedding)}")
+
+                    # Validate embedding dimension
                     validate_embedding_dimension(embedding)
 
                     # Store the new embedding and response in Chroma
@@ -105,6 +112,9 @@ def handle_query():
                         "INSERT INTO embedding_logs (query_text, response) VALUES (%s, %s)",
                         (user_query, response),
                     )
+                except ValueError as ve:
+                    print(f"Validation Error: {ve}")
+                    return jsonify({"error": str(ve)}), 400
                 except Exception as e:
                     print(f"Error fetching response or embedding from OpenAI: {e}")
                     return jsonify({"error": "Failed to process the query."}), 500
