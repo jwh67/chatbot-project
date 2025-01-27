@@ -8,10 +8,43 @@ import logging
 import logging.handlers
 import re
 from cachetools import TTLCache
+from dotenv import load_dotenv
+import os
+import mysql.connector
 
-# Initialize Flask app
+# Load environment variables
+load_dotenv()
+
+# Flask app initialization
 app = Flask(__name__)
-conn = create_connection()
+
+# Database configuration from .env
+DB_HOST = os.getenv("DB_HOST")
+DB_USER = os.getenv("DB_USER")
+DB_PASSWORD = os.getenv("DB_PASSWORD")
+DB_NAME = os.getenv("DB_NAME")
+
+# Connect to the database
+def load_api_keys_from_db():
+    """Load API keys from the MySQL database."""
+    try:
+        conn = mysql.connector.connect(
+            host=DB_HOST,
+            user=DB_USER,
+            password=DB_PASSWORD,
+            database=DB_NAME,
+        )
+        cursor = conn.cursor()
+        cursor.execute("SELECT key_value FROM api_keys")
+        keys = {row[0] for row in cursor.fetchall()}
+        conn.close()
+        return keys
+    except Exception as e:
+        print(f"Error loading API keys: {e}")
+        return set()
+
+# Load API keys from the database
+VALID_API_KEYS = load_api_keys_from_db()
 
 # Initialize Chroma client
 chroma_client = chromadb.Client()
@@ -29,6 +62,9 @@ file_handler = logging.handlers.RotatingFileHandler(log_file, maxBytes=5 * 1024 
 formatter = logging.Formatter('{"timestamp": "%(asctime)s", "level": "%(levelname)s", "message": %(message)s}')
 file_handler.setFormatter(formatter)
 logger.addHandler(file_handler)
+
+# Configure cache (max size: 1000 entries, TTL: 3600 seconds)
+response_cache = TTLCache(maxsize=1000, ttl=3600)
 
 def log_request(query, response, status="success"):
     """Log the user query and response in JSON format."""
@@ -53,9 +89,6 @@ def sanitize_and_validate_input(user_query):
     user_query = re.sub(r'[^\w\s]', '', user_query)
     return True, user_query
 
-# Configure cache (max size: 1000 entries, TTL: 3600 seconds)
-response_cache = TTLCache(maxsize=1000, ttl=3600)
-
 def cache_get_response(key):
     """Retrieve cached response if available."""
     return response_cache.get(key)
@@ -64,8 +97,19 @@ def cache_set_response(key, value):
     """Set a response in the cache."""
     response_cache[key] = value
 
+def authenticate_request():
+    """Check for a valid API key in the request headers."""
+    api_key = request.headers.get("X-API-Key")
+    if api_key not in VALID_API_KEYS:
+        return False
+    return True
+
 @app.route('/query', methods=['POST'])
 def handle_query():
+    # Authenticate the request
+    if not authenticate_request():
+        return jsonify({"error": "Unauthorized"}), 401
+
     data = request.json
     user_query = data.get("query")
 
@@ -76,73 +120,48 @@ def handle_query():
         return jsonify({"error": sanitized_query}), 400
 
     user_query = sanitized_query  # Use sanitized input moving forward
-    cursor = conn.cursor(dictionary=True)
 
-    # Step 1: Check MySQL for a cached response
+    # Step 1: Check cache
     cached_response = cache_get_response(user_query)
     if cached_response:
         log_request(user_query, cached_response, status="cached")
         return jsonify({"response": cached_response})
 
-    cursor.execute("SELECT response FROM user_queries WHERE query=%s LIMIT 1", (user_query,))
-    result = cursor.fetchone()
+    # Step 2: Check Chroma
+    try:
+        chroma_results = collection.query(query_texts=[user_query], n_results=1)
+        if chroma_results and chroma_results["metadatas"]:
+            metadata = chroma_results["metadatas"][0]
+            response = metadata.get("response") if metadata else None
+        else:
+            response = None
+    except Exception as e:
+        print(f"Error querying ChromaDB: {e}")
+        response = None
 
-    if result:
-        response = result["response"]
-        cache_set_response(user_query, response)  # Cache MySQL response
-    else:
-        # Step 2: Check predefined intents
-        response = intents.get(user_query.lower())
+    # Step 3: Call OpenAI if no cached response
+    if not response:
+        try:
+            response = get_openai_response(user_query)
+            embedding = get_openai_embedding(user_query)
 
-        if not response:
-            # Step 3: Check Chroma for a cached embedding
-            try:
-                chroma_results = collection.query(query_texts=[user_query], n_results=1)
-                if chroma_results and chroma_results["metadatas"]:
-                    metadata = chroma_results["metadatas"][0]
-                    response = metadata.get("response") if metadata else None
-                else:
-                    response = None
-            except Exception as e:
-                print(f"Error querying ChromaDB: {e}")
-                response = None
+            if embedding is None:
+                raise ValueError("Failed to generate embedding for the query.")
 
-            if not response:
-                # Step 4: Call OpenAI for a new response and embedding
-                try:
-                    response = get_openai_response(user_query)
-                    embedding = get_openai_embedding(user_query)
+            # Store embedding in Chroma
+            collection.add(
+                ids=[user_query],
+                documents=[user_query],
+                embeddings=[embedding],
+                metadatas=[{"response": response}],
+            )
+        except Exception as e:
+            print(f"Error fetching response or embedding from OpenAI: {e}")
+            log_request(user_query, "Failed to process query", status="error")
+            return jsonify({"error": "Failed to process the query."}), 500
 
-                    if embedding is None:
-                        raise ValueError("Failed to generate embedding for the query.")
-
-                    # Store the new embedding and response in Chroma
-                    collection.add(
-                        ids=[user_query],
-                        documents=[user_query],
-                        embeddings=[embedding],
-                        metadatas=[{"response": response}],
-                    )
-
-                    # Log the embedding creation in MySQL
-                    cursor.execute(
-                        "INSERT INTO embedding_logs (query_text, response) VALUES (%s, %s)",
-                        (user_query, response),
-                    )
-                except Exception as e:
-                    print(f"Error fetching response or embedding from OpenAI: {e}")
-                    log_request(user_query, "Failed to process query", status="error")
-                    return jsonify({"error": "Failed to process the query."}), 500
-
-        # Log the new query and response in MySQL
-        cursor.execute(
-            "INSERT INTO user_queries (query, response, intent) VALUES (%s, %s, %s)",
-            (user_query, response, None),
-        )
-        conn.commit()
-
-        # Cache the new response
-        cache_set_response(user_query, response)
+    # Cache the new response
+    cache_set_response(user_query, response)
 
     log_request(user_query, response)
     return jsonify({"response": response})

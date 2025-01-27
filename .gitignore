@@ -36,6 +36,7 @@ htmlcov/
 apptest.py
 test_openai_standalone.py
 v1.60.1.zip
+chatbot_logs.json
 
 # IDE-specific files
 .vscode/

@@ -4,3 +4,5 @@
 {"timestamp": "2025-01-27 10:55:17,518", "level": "INFO", "message": {"query": "translate to english gusto kong tao mataba", "response": "\"I like fat people.\"", "status": "cached"}}
 {"timestamp": "2025-01-27 10:55:24,101", "level": "INFO", "message": {"query": "translate to english gusto kong mataba", "response": "\"I want to be fat.\"", "status": "success"}}
 {"timestamp": "2025-01-27 10:55:32,198", "level": "INFO", "message": {"query": "translate to english gusto kong yumaman", "response": "I want to become rich.", "status": "success"}}
+{"timestamp": "2025-01-27 12:50:18,163", "level": "INFO", "message": {"query": "What is the capital of Germany", "response": "The capital of Germany is Berlin.", "status": "success"}}
+{"timestamp": "2025-01-27 12:50:42,327", "level": "INFO", "message": {"query": "What is the capital of England", "response": "The capital of England is London.", "status": "success"}}
