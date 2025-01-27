@@ -4,7 +4,10 @@ from openai_integration.openai_utils import get_openai_response, get_openai_embe
 from chromadb.config import Settings
 import chromadb
 import json
+import logging
+import logging.handlers
 import re
+from cachetools import TTLCache
 
 # Initialize Flask app
 app = Flask(__name__)
@@ -18,34 +21,48 @@ collection = chroma_client.get_or_create_collection(name="chatbot_embeddings")
 with open("intents/responses.json") as f:
     intents = json.load(f)
 
+# Configure logging
+log_file = "chatbot_logs.json"
+logger = logging.getLogger("ChatbotLogger")
+logger.setLevel(logging.INFO)
+file_handler = logging.handlers.RotatingFileHandler(log_file, maxBytes=5 * 1024 * 1024, backupCount=5)  # 5 MB files
+formatter = logging.Formatter('{"timestamp": "%(asctime)s", "level": "%(levelname)s", "message": %(message)s}')
+file_handler.setFormatter(formatter)
+logger.addHandler(file_handler)
+
+def log_request(query, response, status="success"):
+    """Log the user query and response in JSON format."""
+    log_entry = json.dumps({
+        "query": query,
+        "response": response,
+        "status": status,
+    })
+    logger.info(log_entry)
+
 def sanitize_and_validate_input(user_query):
-    """
-    Sanitize and validate the user query to ensure it is safe and appropriate.
-    """
-    # Remove leading/trailing whitespaces
+    """Sanitize and validate the user query to ensure it is safe and appropriate."""
     user_query = user_query.strip()
 
-    # Reject empty or very short queries
     if not user_query or len(user_query) < 3:
         return False, "Query must be at least 3 characters long."
 
-    # Prevent illegal or inappropriate queries using a predefined list of blocked terms
     blocked_terms = ["illegal", "hack", "exploit", "bypass", "violate"]
     if any(term in user_query.lower() for term in blocked_terms):
         return False, "Query contains prohibited content."
 
-    # Additional sanitization (e.g., removing special characters)
     user_query = re.sub(r'[^\w\s]', '', user_query)
-
-    # Return sanitized input and success flag
     return True, user_query
 
-def validate_embedding_dimension(embedding, expected_dim=1536):
-    """
-    Validate the dimension of the embedding to match the expected dimensionality.
-    """
-    if len(embedding) != expected_dim:
-        raise ValueError(f"Invalid embedding dimension: {len(embedding)}. Expected {expected_dim}.")
+# Configure cache (max size: 1000 entries, TTL: 3600 seconds)
+response_cache = TTLCache(maxsize=1000, ttl=3600)
+
+def cache_get_response(key):
+    """Retrieve cached response if available."""
+    return response_cache.get(key)
+
+def cache_set_response(key, value):
+    """Set a response in the cache."""
+    response_cache[key] = value
 
 @app.route('/query', methods=['POST'])
 def handle_query():
@@ -55,17 +72,24 @@ def handle_query():
     # Validate and sanitize user query
     is_valid, sanitized_query = sanitize_and_validate_input(user_query)
     if not is_valid:
+        log_request(user_query, sanitized_query, status="failure")
         return jsonify({"error": sanitized_query}), 400
 
     user_query = sanitized_query  # Use sanitized input moving forward
     cursor = conn.cursor(dictionary=True)
 
     # Step 1: Check MySQL for a cached response
+    cached_response = cache_get_response(user_query)
+    if cached_response:
+        log_request(user_query, cached_response, status="cached")
+        return jsonify({"response": cached_response})
+
     cursor.execute("SELECT response FROM user_queries WHERE query=%s LIMIT 1", (user_query,))
     result = cursor.fetchone()
 
     if result:
         response = result["response"]
+        cache_set_response(user_query, response)  # Cache MySQL response
     else:
         # Step 2: Check predefined intents
         response = intents.get(user_query.lower())
@@ -89,15 +113,8 @@ def handle_query():
                     response = get_openai_response(user_query)
                     embedding = get_openai_embedding(user_query)
 
-                    # Prevent adding embeddings with incorrect dimensions
-                    if len(embedding) != 1536:  # Replace 1536 with the expected dimension
-                        raise ValueError(f"Invalid embedding dimension: {len(embedding)}. Expected 1536.")
-
-                    # Log the embedding dimension for debugging
-                    print(f"Generated embedding dimension: {len(embedding)}")
-
-                    # Validate embedding dimension
-                    validate_embedding_dimension(embedding)
+                    if embedding is None:
+                        raise ValueError("Failed to generate embedding for the query.")
 
                     # Store the new embedding and response in Chroma
                     collection.add(
@@ -112,11 +129,9 @@ def handle_query():
                         "INSERT INTO embedding_logs (query_text, response) VALUES (%s, %s)",
                         (user_query, response),
                     )
-                except ValueError as ve:
-                    print(f"Validation Error: {ve}")
-                    return jsonify({"error": str(ve)}), 400
                 except Exception as e:
                     print(f"Error fetching response or embedding from OpenAI: {e}")
+                    log_request(user_query, "Failed to process query", status="error")
                     return jsonify({"error": "Failed to process the query."}), 500
 
         # Log the new query and response in MySQL
@@ -126,6 +141,10 @@ def handle_query():
         )
         conn.commit()
 
+        # Cache the new response
+        cache_set_response(user_query, response)
+
+    log_request(user_query, response)
     return jsonify({"response": response})
 
 if __name__ == '__main__':
