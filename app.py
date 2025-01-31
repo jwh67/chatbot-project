@@ -1,16 +1,16 @@
-from flask import Flask, request, jsonify
-from database.db import create_connection
-from openai_integration.openai_utils import get_openai_response, get_openai_embedding
-from chromadb.config import Settings
-import chromadb
+import os
 import json
 import logging
 import logging.handlers
 import re
-from cachetools import TTLCache
-from dotenv import load_dotenv
-import os
 import mysql.connector
+from flask import Flask, request, jsonify
+from dotenv import load_dotenv
+from cachetools import TTLCache
+from openai_integration.openai_utils import get_openai_response, get_openai_embedding
+from weaviate import WeaviateClient
+from weaviate.connect import ConnectionParams
+from weaviate.classes.config import Configure, Property, DataType
 
 # Load environment variables
 load_dotenv()
@@ -24,7 +24,7 @@ DB_USER = os.getenv("DB_USER")
 DB_PASSWORD = os.getenv("DB_PASSWORD")
 DB_NAME = os.getenv("DB_NAME")
 
-# Connect to the database
+# Initialize MySQL connection
 def load_api_keys_from_db():
     """Load API keys from the MySQL database."""
     try:
@@ -46,19 +46,41 @@ def load_api_keys_from_db():
 # Load API keys from the database
 VALID_API_KEYS = load_api_keys_from_db()
 
-# Initialize Chroma client
-chroma_client = chromadb.Client()
-collection = chroma_client.get_or_create_collection(name="chatbot_embeddings")
+# Initialize Weaviate client (v4)
+WEAVIATE_URL = os.getenv("WEAVIATE_URL", "http://localhost:8080")
+connection_params = ConnectionParams.from_url(WEAVIATE_URL, grpc_port=50051)
+client = WeaviateClient(connection_params=connection_params)
 
-# Load predefined intents
-with open("intents/responses.json") as f:
-    intents = json.load(f)
+# Ensure Weaviate connection is active
+try:
+    client.connect()
+    print("✅ Weaviate client connected successfully.")
+except Exception as e:
+    print(f"❌ Error connecting to Weaviate: {e}")
+    exit(1)
+
+# Define collection name
+collection_name = "ChatbotEmbeddings"
+
+# Ensure collection exists
+if not client.collections.exists(collection_name):
+    print(f"ℹ️ Creating collection: {collection_name} in Weaviate...")
+    client.collections.create(
+        name=collection_name,
+        vectorizer_config=Configure.Vectorizer.text2vec_openai(),  # Corrected vectorizer config
+        properties=[
+            Property(name="query", data_type=DataType.TEXT),
+            Property(name="response", data_type=DataType.TEXT),
+        ]
+    )
+else:
+    print(f"✅ Weaviate collection '{collection_name}' already exists.")
 
 # Configure logging
 log_file = "chatbot_logs.json"
 logger = logging.getLogger("ChatbotLogger")
 logger.setLevel(logging.INFO)
-file_handler = logging.handlers.RotatingFileHandler(log_file, maxBytes=5 * 1024 * 1024, backupCount=5)  # 5 MB files
+file_handler = logging.handlers.RotatingFileHandler(log_file, maxBytes=5 * 1024 * 1024, backupCount=5)
 formatter = logging.Formatter('{"timestamp": "%(asctime)s", "level": "%(levelname)s", "message": %(message)s}')
 file_handler.setFormatter(formatter)
 logger.addHandler(file_handler)
@@ -67,7 +89,7 @@ logger.addHandler(file_handler)
 response_cache = TTLCache(maxsize=1000, ttl=3600)
 
 def log_request(query, response, status="success"):
-    """Log the user query and response in JSON format."""
+    """Log user queries and responses."""
     log_entry = json.dumps({
         "query": query,
         "response": response,
@@ -76,7 +98,7 @@ def log_request(query, response, status="success"):
     logger.info(log_entry)
 
 def sanitize_and_validate_input(user_query):
-    """Sanitize and validate the user query to ensure it is safe and appropriate."""
+    """Sanitize and validate user query to ensure it is safe and appropriate."""
     user_query = user_query.strip()
 
     if not user_query or len(user_query) < 3:
@@ -100,9 +122,7 @@ def cache_set_response(key, value):
 def authenticate_request():
     """Check for a valid API key in the request headers."""
     api_key = request.headers.get("X-API-Key")
-    if api_key not in VALID_API_KEYS:
-        return False
-    return True
+    return api_key in VALID_API_KEYS
 
 @app.route('/query', methods=['POST'])
 def handle_query():
@@ -127,38 +147,39 @@ def handle_query():
         log_request(user_query, cached_response, status="cached")
         return jsonify({"response": cached_response})
 
-    # Step 2: Check Chroma
+    # Step 2: Generate embedding for Weaviate query
+    embedding = get_openai_embedding(user_query)
+    if embedding is None:
+        return jsonify({"error": "Failed to generate embedding"}), 500
+
+    # Step 3: Query Weaviate using near_vector
     try:
-        chroma_results = collection.query(query_texts=[user_query], n_results=1)
-        if chroma_results and chroma_results["metadatas"]:
-            metadata = chroma_results["metadatas"][0]
-            response = metadata.get("response") if metadata else None
+        result = client.collections.get(collection_name).query.near_vector(
+            near_vector=embedding,
+            limit=1,
+            return_properties=["query", "response"]
+        )
+        
+        # ✅ **Fix: Access properties properly**
+        if result.objects:
+            response = result.objects[0].properties["response"]  # ✅ **Correct way to access properties**
         else:
             response = None
     except Exception as e:
-        print(f"Error querying ChromaDB: {e}")
+        print(f"❌ Error querying Weaviate: {e}")
         response = None
 
-    # Step 3: Call OpenAI if no cached response
+    # Step 4: If no result found, fetch from OpenAI and store in Weaviate
     if not response:
+        response = get_openai_response(user_query)
+
         try:
-            response = get_openai_response(user_query)
-            embedding = get_openai_embedding(user_query)
-
-            if embedding is None:
-                raise ValueError("Failed to generate embedding for the query.")
-
-            # Store embedding in Chroma
-            collection.add(
-                ids=[user_query],
-                documents=[user_query],
-                embeddings=[embedding],
-                metadatas=[{"response": response}],
+            client.collections.get(collection_name).data.insert(
+                properties={"query": user_query, "response": response},
+                vector=embedding
             )
         except Exception as e:
-            print(f"Error fetching response or embedding from OpenAI: {e}")
-            log_request(user_query, "Failed to process query", status="error")
-            return jsonify({"error": "Failed to process the query."}), 500
+            print(f"❌ Error inserting into Weaviate: {e}")
 
     # Cache the new response
     cache_set_response(user_query, response)

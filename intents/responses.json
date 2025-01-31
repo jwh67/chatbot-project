@@ -1,5 +1,14 @@
 {
-    "greet": "Hello! How can I assist you?",
+    "hello": "Hello! How can I assist you today?",
+    "how are you": "I'm just a chatbot, but I'm here to help!",
+    "what is your name": "I'm your friendly chatbot assistant.",
+    "translate to filipino hello": "Kumusta!",
+    "translate to english magandang umaga": "Good morning!",
+    "what is ai": "AI stands for Artificial Intelligence, the simulation of human intelligence by machines.",
+    "tell me a joke": "Why don't scientists trust atoms? Because they make up everything!",
     "goodbye": "Goodbye! Have a great day!",
-    "thank_you": "You're welcome!"
+    "thank_you": "You're welcome!",
+    "greet": "Hello! How can I assist you?"
+
 }
+

@@ -1,31 +1,12 @@
-version: '3.8'
 services:
-  chatbot:
-    build: ./chatbot-api
+  weaviate:
+    image: semitechnologies/weaviate:1.23.7
     ports:
-      - "5000:5000"
-    depends_on:
-      - mysql
-      - manticore
-
-  mysql:
-    image: mysql:latest
+      - "8080:8080"
+      - "50051:50051"  # Ensure gRPC port is exposed
     environment:
-      MYSQL_ROOT_PASSWORD: root
-      MYSQL_DATABASE: chatbot
-    volumes:
-      - mysql-data:/var/lib/mysql
-
-  manticore:
-    image: manticoresearch/manticore:latest
-    ports:
-      - "9306:9306"
-      - "9312:9312"
-
-  mlflow:
-    build: ./mlflow
-    ports:
-      - "5001:5000"
-
-volumes:
-  mysql-data:
+      - AUTHENTICATION_ANONYMOUS_ACCESS_ENABLED=true
+      - PERSISTENCE_DATA_PATH=/var/lib/weaviate
+      - ENABLE_MODULES=text2vec-openai
+      - CLUSTER_HOSTNAME=node1
+      - GRPC_PORT=50051

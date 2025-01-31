@@ -37,6 +37,7 @@ apptest.py
 test_openai_standalone.py
 v1.60.1.zip
 chatbot_logs.json
+test_chroma.py
 
 # IDE-specific files
 .vscode/
