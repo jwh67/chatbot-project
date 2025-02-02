@@ -2,7 +2,7 @@ Flask
 mysql-connector-python
 openai
 pytest
-chromadb
 pytest-asyncio
 respx==0.19.2
 inline_snapshot==0.2.1
+pinecone-client

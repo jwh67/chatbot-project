@@ -95,3 +95,24 @@
 {"timestamp": "2025-01-31 05:54:15,074", "level": "INFO", "message": {"query": "What is the capital of brazil", "response": "The capital of Argentina is Buenos Aires.", "status": "cached"}}
 {"timestamp": "2025-01-31 05:54:15,932", "level": "INFO", "message": {"query": "What is the capital of brazil", "response": "The capital of Argentina is Buenos Aires.", "status": "cached"}}
 {"timestamp": "2025-01-31 05:54:16,712", "level": "INFO", "message": {"query": "What is the capital of brazil", "response": "The capital of Argentina is Buenos Aires.", "status": "cached"}}
+{"timestamp": "2025-02-01 05:48:32,598", "level": "INFO", "message": {"query": "What is the capital of brazil", "response": "The capital of Argentina is Buenos Aires.", "status": "success"}}
+{"timestamp": "2025-02-01 05:48:44,294", "level": "INFO", "message": {"query": "What is the capital of fuck", "response": "The capital of Argentina is Buenos Aires.", "status": "success"}}
+{"timestamp": "2025-02-01 05:49:08,953", "level": "INFO", "message": {"query": "what does fuck", "response": "The capital of Argentina is Buenos Aires.", "status": "success"}}
+{"timestamp": "2025-02-01 05:51:00,369", "level": "INFO", "message": {"query": "What is the capital of italy", "response": "The capital of Argentina is Buenos Aires.", "status": "success"}}
+{"timestamp": "2025-02-01 06:20:21,745", "level": "INFO", "message": {"query": "What is the capital of italy", "response": "The capital of Argentina is Buenos Aires.", "status": "success"}}
+{"timestamp": "2025-02-01 06:20:25,593", "level": "INFO", "message": {"query": "What is the capital of italy", "response": "The capital of Argentina is Buenos Aires.", "status": "cached"}}
+{"timestamp": "2025-02-01 06:20:27,601", "level": "INFO", "message": {"query": "What is the capital of italy", "response": "The capital of Argentina is Buenos Aires.", "status": "cached"}}
+{"timestamp": "2025-02-01 06:20:28,753", "level": "INFO", "message": {"query": "What is the capital of italy", "response": "The capital of Argentina is Buenos Aires.", "status": "cached"}}
+{"timestamp": "2025-02-01 06:20:44,096", "level": "INFO", "message": {"query": "What is the capital of iran", "response": "The capital of Argentina is Buenos Aires.", "status": "success"}}
+{"timestamp": "2025-02-01 06:20:47,923", "level": "INFO", "message": {"query": "What is the capital of iran", "response": "The capital of Argentina is Buenos Aires.", "status": "cached"}}
+{"timestamp": "2025-02-01 06:21:30,640", "level": "INFO", "message": {"query": "What is the capital of iran", "response": "The capital of Iran is Tehran.", "status": "success"}}
+{"timestamp": "2025-02-01 06:21:42,350", "level": "INFO", "message": {"query": "What is the capital of italy", "response": "The capital of Iran is Tehran.", "status": "success"}}
+{"timestamp": "2025-02-01 06:21:55,990", "level": "INFO", "message": {"query": "What is the capital of brazil", "response": "The capital of Iran is Tehran.", "status": "success"}}
+{"timestamp": "2025-02-01 06:22:07,271", "level": "INFO", "message": {"query": "What is the capital of laos", "response": "The capital of Iran is Tehran.", "status": "success"}}
+{"timestamp": "2025-02-02 01:50:16,639", "level": "INFO", "message": {"query": "What is the capital of laos", "response": "The capital of Laos is Vientiane.", "status": "success"}}
+{"timestamp": "2025-02-02 01:50:26,798", "level": "INFO", "message": {"query": "What is the capital of brazil", "response": "The capital of Laos is Vientiane.", "status": "success"}}
+{"timestamp": "2025-02-02 03:20:37,069", "level": "INFO", "message": {"query": "What is the capital of brazil", "response": "The capital of Brazil is Bras\u00edlia.", "status": "success"}}
+{"timestamp": "2025-02-02 07:43:59,191", "level": "INFO", "message": {"query": "What is the capital of laos", "response": "The capital of Brazil is Bras\u00edlia.", "status": "success"}}
+{"timestamp": "2025-02-02 10:17:53,644", "level": "INFO", "message": {"query": "What is the capital of brazil", "response": "The capital of Brazil is Bras\u00edlia.", "status": "success"}}
+{"timestamp": "2025-02-02 10:18:04,600", "level": "INFO", "message": {"query": "What is the capital of laos", "response": "The capital of Laos is Vientiane.", "status": "success"}}
+{"timestamp": "2025-02-02 10:18:17,352", "level": "INFO", "message": {"query": "What is the capital of italy", "response": "The capital of Italy is Rome.", "status": "success"}}

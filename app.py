@@ -4,13 +4,18 @@ import logging
 import logging.handlers
 import re
 import mysql.connector
+import nltk
+import redis
+from pinecone import Pinecone, ServerlessSpec
 from flask import Flask, request, jsonify
-from dotenv import load_dotenv
+from flask_limiter import Limiter
+from flask_limiter.util import get_remote_address
 from cachetools import TTLCache
+from dotenv import load_dotenv
 from openai_integration.openai_utils import get_openai_response, get_openai_embedding
-from weaviate import WeaviateClient
-from weaviate.connect import ConnectionParams
-from weaviate.classes.config import Configure, Property, DataType
+
+# Ensure NLTK is properly installed
+nltk.data.path.append("/home/jeff/nltk_data")
 
 # Load environment variables
 load_dotenv()
@@ -18,11 +23,40 @@ load_dotenv()
 # Flask app initialization
 app = Flask(__name__)
 
-# Database configuration from .env
+# Rate limiting with Redis
+redis_client = redis.Redis(host="localhost", port=6379, db=0)
+limiter = Limiter(get_remote_address, app=app, storage_uri="redis://localhost:6379")
+
+# Database configuration
 DB_HOST = os.getenv("DB_HOST")
 DB_USER = os.getenv("DB_USER")
 DB_PASSWORD = os.getenv("DB_PASSWORD")
 DB_NAME = os.getenv("DB_NAME")
+
+# Pinecone configuration
+PINECONE_API_KEY = os.getenv("PINECONE_API_KEY")
+PINECONE_INDEX_NAME = os.getenv("PINECONE_INDEX")
+
+# Initialize Pinecone
+pc = Pinecone(api_key=PINECONE_API_KEY)
+
+# Define Pinecone Index Name
+PINECONE_INDEX = os.getenv("PINECONE_INDEX", "chatbot-index")  # Set default index name
+
+# Check if index exists, otherwise create it
+if PINECONE_INDEX not in pc.list_indexes().names():
+    print(f"ℹ️ Creating Pinecone index: {PINECONE_INDEX} ...")
+    pc.create_index(
+        name=PINECONE_INDEX,
+        dimension=1536,  # OpenAI embedding size
+        metric="cosine",
+        spec=ServerlessSpec(cloud="aws", region="us-west-2")  # Modify if needed
+    )
+else:
+    print(f"✅ Pinecone index '{PINECONE_INDEX}' already exists.")
+
+# Connect to the existing index
+index = pc.Index(PINECONE_INDEX)
 
 # Initialize MySQL connection
 def load_api_keys_from_db():
@@ -43,38 +77,8 @@ def load_api_keys_from_db():
         print(f"Error loading API keys: {e}")
         return set()
 
-# Load API keys from the database
+# Load API keys
 VALID_API_KEYS = load_api_keys_from_db()
-
-# Initialize Weaviate client (v4)
-WEAVIATE_URL = os.getenv("WEAVIATE_URL", "http://localhost:8080")
-connection_params = ConnectionParams.from_url(WEAVIATE_URL, grpc_port=50051)
-client = WeaviateClient(connection_params=connection_params)
-
-# Ensure Weaviate connection is active
-try:
-    client.connect()
-    print("✅ Weaviate client connected successfully.")
-except Exception as e:
-    print(f"❌ Error connecting to Weaviate: {e}")
-    exit(1)
-
-# Define collection name
-collection_name = "ChatbotEmbeddings"
-
-# Ensure collection exists
-if not client.collections.exists(collection_name):
-    print(f"ℹ️ Creating collection: {collection_name} in Weaviate...")
-    client.collections.create(
-        name=collection_name,
-        vectorizer_config=Configure.Vectorizer.text2vec_openai(),  # Corrected vectorizer config
-        properties=[
-            Property(name="query", data_type=DataType.TEXT),
-            Property(name="response", data_type=DataType.TEXT),
-        ]
-    )
-else:
-    print(f"✅ Weaviate collection '{collection_name}' already exists.")
 
 # Configure logging
 log_file = "chatbot_logs.json"
@@ -125,6 +129,7 @@ def authenticate_request():
     return api_key in VALID_API_KEYS
 
 @app.route('/query', methods=['POST'])
+@limiter.limit("10 per minute")
 def handle_query():
     # Authenticate the request
     if not authenticate_request():
@@ -147,39 +152,35 @@ def handle_query():
         log_request(user_query, cached_response, status="cached")
         return jsonify({"response": cached_response})
 
-    # Step 2: Generate embedding for Weaviate query
+    # Step 2: Generate embedding for Pinecone query
     embedding = get_openai_embedding(user_query)
     if embedding is None:
         return jsonify({"error": "Failed to generate embedding"}), 500
 
-    # Step 3: Query Weaviate using near_vector
+    # Step 3: Query Pinecone using the embedding
     try:
-        result = client.collections.get(collection_name).query.near_vector(
-            near_vector=embedding,
-            limit=1,
-            return_properties=["query", "response"]
-        )
-        
-        # ✅ **Fix: Access properties properly**
-        if result.objects:
-            response = result.objects[0].properties["response"]  # ✅ **Correct way to access properties**
+        pinecone_results = index.query(vector=embedding, top_k=1, include_metadata=True)
+
+        if pinecone_results and pinecone_results["matches"]:
+            response = pinecone_results["matches"][0]["metadata"]["response"]
         else:
             response = None
     except Exception as e:
-        print(f"❌ Error querying Weaviate: {e}")
+        print(f"❌ Error querying Pinecone: {e}")
         response = None
 
-    # Step 4: If no result found, fetch from OpenAI and store in Weaviate
+    # Step 4: If no result found, fetch from OpenAI and store in Pinecone
     if not response:
         response = get_openai_response(user_query)
 
         try:
-            client.collections.get(collection_name).data.insert(
-                properties={"query": user_query, "response": response},
-                vector=embedding
-            )
+            index.upsert(vectors=[{
+                "id": user_query,  # Ensure ID uniqueness
+                "values": embedding,
+                "metadata": {"query": user_query, "response": response}
+            }])
         except Exception as e:
-            print(f"❌ Error inserting into Weaviate: {e}")
+            print(f"❌ Error inserting into Pinecone: {e}")
 
     # Cache the new response
     cache_set_response(user_query, response)
