@@ -34,8 +34,7 @@ mlflow-artifacts/
 .coverage
 htmlcov/
 apptest.py
-v1.60.1.zip
-/home/jeff/devops/aiml1/chatbot-api/chatbot_logs.json
+logs/chatbot_logs_*.json
 
 # IDE-specific files
 .vscode/
