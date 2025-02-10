@@ -34,10 +34,8 @@ mlflow-artifacts/
 .coverage
 htmlcov/
 apptest.py
-test_openai_standalone.py
 v1.60.1.zip
-chatbot_logs.json
-test_chroma.py
+/home/jeff/devops/aiml1/chatbot-api/chatbot_logs.json
 
 # IDE-specific files
 .vscode/
