@@ -1,5 +1,4 @@
-from flask import Flask, request, jsonify, Response
-from database.db import create_connection
+from flask import Flask, request, jsonify
 from openai_integration.openai_utils import get_openai_response, get_openai_embedding
 import json
 import logging
@@ -7,12 +6,11 @@ import os
 import hashlib
 import redis  # ✅ Valkey uses Redis API
 import re
-import mysql.connector
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
 from dotenv import load_dotenv
 from pinecone import Pinecone
-from datetime import datetime
+from datetime import datetime, timezone  # ✅ Fix timezone issue
 
 # ✅ Load environment variables
 load_dotenv()
@@ -31,20 +29,6 @@ limiter = Limiter(
 # ✅ Initialize Valkey (Using Redis API)
 valkey_client = redis.Redis(host="localhost", port=6379, db=0)
 CACHE_TTL = 3600  # Cache responses for 1 hour
-
-# ✅ MySQL Database Configuration
-DB_HOST = os.getenv("DB_HOST")
-DB_USER = os.getenv("DB_USER")
-DB_PASSWORD = os.getenv("DB_PASSWORD")
-DB_NAME = os.getenv("DB_NAME")
-
-# ✅ Initialize MySQL Connection
-try:
-    db_conn = create_connection()
-    logging.info("✅ Connected to MySQL database successfully.")
-except Exception as e:
-    logging.error(f"❌ Failed to connect to MySQL: {e}")
-    db_conn = None
 
 # ✅ Initialize Pinecone
 PINECONE_API_KEY = os.getenv("PINECONE_API_KEY")
@@ -73,14 +57,14 @@ def get_log_filename():
     log_dir = "/home/jeff/devops/aiml1/chatbot-api/logs"
     os.makedirs(log_dir, exist_ok=True)  # ✅ Ensure logs directory exists
 
-    today = datetime.utcnow().strftime("%Y-%m-%d")  # Daily logs
+    today = datetime.now(timezone.utc).strftime("%Y-%m-%d")  # ✅ Fix deprecated utcnow()
     return os.path.join(log_dir, f"chatbot_logs_{today}.json")
 
 # ✅ Function to write logs to a JSON file (Daily Rotation)
 def log_to_json(user_query, response, status="success"):
     """Logs chatbot interactions to a daily rotating JSON log file."""
     log_entry = {
-        "timestamp": datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S"),
+        "timestamp": datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S"),  # ✅ Fix deprecated utcnow()
         "query": user_query,
         "response": response,
         "status": status
