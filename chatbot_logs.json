@@ -1,118 +1,20 @@
-{"timestamp": "2025-01-27 08:27:16,726", "level": "INFO", "message": {"query": "translate to english gusto kong yumaman", "response": "I want to become rich.", "status": "success"}}
-{"timestamp": "2025-01-27 08:27:37,121", "level": "INFO", "message": {"query": "translate to english gusto kong mataba", "response": "\"I want to be fat.\"", "status": "success"}}
-{"timestamp": "2025-01-27 10:54:59,101", "level": "INFO", "message": {"query": "translate to english gusto kong tao mataba", "response": "\"I like fat people.\"", "status": "success"}}
-{"timestamp": "2025-01-27 10:55:17,518", "level": "INFO", "message": {"query": "translate to english gusto kong tao mataba", "response": "\"I like fat people.\"", "status": "cached"}}
-{"timestamp": "2025-01-27 10:55:24,101", "level": "INFO", "message": {"query": "translate to english gusto kong mataba", "response": "\"I want to be fat.\"", "status": "success"}}
-{"timestamp": "2025-01-27 10:55:32,198", "level": "INFO", "message": {"query": "translate to english gusto kong yumaman", "response": "I want to become rich.", "status": "success"}}
-{"timestamp": "2025-01-27 12:50:18,163", "level": "INFO", "message": {"query": "What is the capital of Germany", "response": "The capital of Germany is Berlin.", "status": "success"}}
-{"timestamp": "2025-01-27 12:50:42,327", "level": "INFO", "message": {"query": "What is the capital of England", "response": "The capital of England is London.", "status": "success"}}
-{"timestamp": "2025-01-27 15:53:50,852", "level": "INFO", "message": {"query": "That is the capital of france?", "response": "The capital of France is Paris.", "status": "success"}}
-{"timestamp": "2025-01-27 15:53:57,473", "level": "INFO", "message": {"query": "That is the capital of greece?", "response": "The capital of Greece is Athens.", "status": "success"}}
-{"timestamp": "2025-01-28 04:26:24,426", "level": "INFO", "message": {"query": "What is the capital of turkey", "response": "The capital of Turkey is Ankara.", "status": "success"}}
-{"timestamp": "2025-01-28 04:26:29,562", "level": "INFO", "message": {"query": "What is the capital of turkey", "response": "The capital of Turkey is Ankara.", "status": "cached"}}
-{"timestamp": "2025-01-28 04:26:34,433", "level": "INFO", "message": {"query": "What is the capital of greece", "response": "The capital of Greece is Athens.", "status": "success"}}
-{"timestamp": "2025-01-28 04:26:46,695", "level": "INFO", "message": {"query": "What is the capital of greece", "response": "The capital of Greece is Athens.", "status": "cached"}}
-{"timestamp": "2025-01-28 04:26:50,268", "level": "INFO", "message": {"query": "What is the capital of greece", "response": "The capital of Greece is Athens.", "status": "cached"}}
-{"timestamp": "2025-01-28 04:26:53,753", "level": "INFO", "message": {"query": "What is the capital of turkey", "response": "The capital of Turkey is Ankara.", "status": "cached"}}
-{"timestamp": "2025-01-28 04:26:56,521", "level": "INFO", "message": {"query": "What is the capital of greece", "response": "The capital of Greece is Athens.", "status": "cached"}}
-{"timestamp": "2025-01-28 04:27:02,949", "level": "INFO", "message": {"query": "What is the capital of france", "response": "The capital of France is Paris.", "status": "success"}}
-{"timestamp": "2025-01-28 04:27:17,859", "level": "INFO", "message": {"query": "What is the capital of Germany", "response": "The capital of Germany is Berlin.", "status": "success"}}
-{"timestamp": "2025-01-28 04:27:22,747", "level": "INFO", "message": {"query": "What is the capital of Germany", "response": "The capital of Germany is Berlin.", "status": "cached"}}
-{"timestamp": "2025-01-28 04:27:25,617", "level": "INFO", "message": {"query": "What is the capital of france", "response": "The capital of France is Paris.", "status": "cached"}}
-{"timestamp": "2025-01-28 04:27:35,386", "level": "INFO", "message": {"query": "What is the capital of England", "response": "The capital of England is London.", "status": "success"}}
-{"timestamp": "2025-01-28 04:27:52,508", "level": "INFO", "message": {"query": "What is the capital of romania", "response": "The capital of Romania is Bucharest.", "status": "success"}}
-{"timestamp": "2025-01-28 04:27:56,826", "level": "INFO", "message": {"query": "What is the capital of romania", "response": "The capital of Romania is Bucharest.", "status": "cached"}}
-{"timestamp": "2025-01-28 04:28:08,661", "level": "INFO", "message": {"query": "What is the capital of russia", "response": "The capital of Russia is Moscow.", "status": "success"}}
-{"timestamp": "2025-01-28 04:34:36,931", "level": "INFO", "message": {"query": "What is the capital of russia", "response": "The capital of Russia is Moscow.", "status": "success"}}
-{"timestamp": "2025-01-28 04:34:48,440", "level": "INFO", "message": {"query": "What is the capital of denmark", "response": "The capital of Denmark is Copenhagen.", "status": "success"}}
-{"timestamp": "2025-01-28 04:35:15,529", "level": "INFO", "message": {"query": "What is the capital of denmark", "response": "The capital of Denmark is Copenhagen.", "status": "cached"}}
-{"timestamp": "2025-01-28 04:39:34,875", "level": "INFO", "message": {"query": "What is the capital of denmark", "response": "The capital of Denmark is Copenhagen.", "status": "success"}}
-{"timestamp": "2025-01-28 04:39:48,234", "level": "INFO", "message": {"query": "What is the capital of poland", "response": "The capital of Poland is Warsaw.", "status": "success"}}
-{"timestamp": "2025-01-29 05:51:03,560", "level": "INFO", "message": {"query": "What is the capital of Germany", "response": "The capital of Germany is Berlin.", "status": "success"}}
-{"timestamp": "2025-01-29 05:53:51,327", "level": "INFO", "message": {"query": "What is the capital of Germany", "response": "The capital of Germany is Berlin.", "status": "success"}}
-{"timestamp": "2025-01-29 05:56:45,278", "level": "INFO", "message": {"query": "What is the capital of Germany", "response": "The capital of Germany is Berlin.", "status": "success"}}
-{"timestamp": "2025-01-29 06:10:01,065", "level": "INFO", "message": {"query": "What is the capital of Germany", "response": "The capital of Germany is Berlin.", "status": "success"}}
-{"timestamp": "2025-01-29 06:10:06,749", "level": "INFO", "message": {"query": "What is the capital of Germany", "response": "The capital of Germany is Berlin.", "status": "cached"}}
-{"timestamp": "2025-01-29 06:10:19,286", "level": "INFO", "message": {"query": "What is the capital of france", "response": "The capital of France is Paris.", "status": "success"}}
-{"timestamp": "2025-01-29 06:10:33,747", "level": "INFO", "message": {"query": "What is the capital of russia", "response": "The capital of Russia is Moscow.", "status": "success"}}
-{"timestamp": "2025-01-29 06:13:20,291", "level": "INFO", "message": {"query": "What is the capital of russia", "response": "The capital of Russia is Moscow.", "status": "success"}}
-{"timestamp": "2025-01-29 06:13:28,148", "level": "INFO", "message": {"query": "What is the capital of france", "response": "The capital of France is Paris.", "status": "success"}}
-{"timestamp": "2025-01-29 06:23:03,754", "level": "INFO", "message": {"query": "What is the capital of france", "response": "The capital of France is Paris.", "status": "success"}}
-{"timestamp": "2025-01-29 06:23:09,917", "level": "INFO", "message": {"query": "What is the capital of france", "response": "The capital of France is Paris.", "status": "cached"}}
-{"timestamp": "2025-01-29 06:23:12,971", "level": "INFO", "message": {"query": "What is the capital of russia", "response": "The capital of Russia is Moscow.", "status": "success"}}
-{"timestamp": "2025-01-29 06:35:52,637", "level": "INFO", "message": {"query": "What is the capital of russia", "response": "The capital of Russia is Moscow.", "status": "success"}}
-{"timestamp": "2025-01-29 06:36:01,423", "level": "INFO", "message": {"query": "What is the capital of russia", "response": "The capital of Russia is Moscow.", "status": "cached"}}
-{"timestamp": "2025-01-29 06:38:33,544", "level": "INFO", "message": {"query": "What is the capital of russia", "response": "The capital of Russia is Moscow.", "status": "success"}}
-{"timestamp": "2025-01-29 06:38:37,231", "level": "INFO", "message": {"query": "What is the capital of russia", "response": "The capital of Russia is Moscow.", "status": "cached"}}
-{"timestamp": "2025-01-29 16:28:57,786", "level": "INFO", "message": {"query": "What is the capital of spain", "response": "The capital of Spain is Madrid.", "status": "success"}}
-{"timestamp": "2025-01-29 16:29:05,395", "level": "INFO", "message": {"query": "What is the capital of spain", "response": "The capital of Spain is Madrid.", "status": "cached"}}
-{"timestamp": "2025-01-29 16:29:19,343", "level": "INFO", "message": {"query": "What is the capital of portugal", "response": "The capital of Portugal is Lisbon.", "status": "success"}}
-{"timestamp": "2025-01-29 16:32:54,822", "level": "INFO", "message": {"query": "What is the capital of india", "response": "The capital of India is New Delhi.", "status": "success"}}
-{"timestamp": "2025-01-29 16:33:02,675", "level": "INFO", "message": {"query": "What is the capital of india", "response": "The capital of India is New Delhi.", "status": "cached"}}
-{"timestamp": "2025-01-29 16:48:09,547", "level": "INFO", "message": {"query": "What is the capital of pakistan", "response": "The capital of Pakistan is Islamabad.", "status": "success"}}
-{"timestamp": "2025-01-29 16:54:09,958", "level": "INFO", "message": {"query": "What is the capital of peru", "response": "The capital of Peru is Lima.", "status": "success"}}
-{"timestamp": "2025-01-29 16:57:59,425", "level": "INFO", "message": {"query": "What is the capital of mexico", "response": "The capital of Mexico is Mexico City. It is one of the largest and most populous cities in the world.", "status": "success"}}
-{"timestamp": "2025-01-29 17:02:09,678", "level": "INFO", "message": {"query": "What is the capital of sweden", "response": "The capital of Sweden is Stockholm.", "status": "success"}}
-{"timestamp": "2025-01-29 17:02:47,502", "level": "INFO", "message": {"query": "What is the capital of sweden translated to tagolog", "response": "The capital of Sweden is Stockholm. In Tagalog, it is translated as \"Estokholmo.\"", "status": "success"}}
-{"timestamp": "2025-01-29 17:03:31,672", "level": "INFO", "message": {"query": "how old are you  translated to tagolog", "response": "\"Gaano ka katanda\" is \"how old are you\" translated to Tagalog.", "status": "success"}}
-{"timestamp": "2025-01-29 17:09:42,499", "level": "INFO", "message": {"query": "how tall are you  translated to tagolog", "response": "\"Gaano kataas ka?\"", "status": "success"}}
-{"timestamp": "2025-01-29 17:15:15,213", "level": "INFO", "message": {"query": "airplane is high in the sky translated to tagolog", "response": "\"Ang eroplano ay mataas sa langit.\"", "status": "success"}}
-{"timestamp": "2025-01-29 18:02:51,425", "level": "INFO", "message": {"query": "What is the capital of thailand", "response": "The capital of Thailand is Bangkok.", "status": "success"}}
-{"timestamp": "2025-01-29 18:06:10,237", "level": "INFO", "message": {"query": "What is the capital of vietnam", "response": "The capital of Vietnam is Hanoi.", "status": "success"}}
-{"timestamp": "2025-01-29 18:09:35,389", "level": "INFO", "message": {"query": "What is the capital of indonesia", "response": "The capital of Indonesia is Jakarta.", "status": "success"}}
-{"timestamp": "2025-01-29 18:24:45,862", "level": "INFO", "message": {"query": "What is the capital of australia", "response": "The capital of Australia is Canberra.", "status": "success"}}
-{"timestamp": "2025-01-29 18:27:49,565", "level": "INFO", "message": {"query": "What is the capital of New Zealand", "response": "The capital of New Zealand is Wellington.", "status": "success"}}
-{"timestamp": "2025-01-29 18:33:19,713", "level": "INFO", "message": {"query": "What is the capital of iceland", "response": "The capital of Iceland is Reykjavik.", "status": "success"}}
-{"timestamp": "2025-01-29 18:40:56,064", "level": "INFO", "message": {"query": "What is the capital of denmark", "response": "The capital of Denmark is Copenhagen.", "status": "success"}}
-{"timestamp": "2025-01-29 18:55:41,508", "level": "INFO", "message": {"query": "What is the capital of austria", "response": "The capital of Austria is Vienna.", "status": "success"}}
-{"timestamp": "2025-01-29 18:55:52,796", "level": "INFO", "message": {"query": "What is the capital of austria", "response": "The capital of Austria is Vienna.", "status": "cached"}}
-{"timestamp": "2025-01-29 18:59:17,421", "level": "INFO", "message": {"query": "What is the capital of nigeria", "response": "The capital of Nigeria is Abuja.", "status": "success"}}
-{"timestamp": "2025-01-29 19:03:59,662", "level": "INFO", "message": {"query": "What is the capital of canada", "response": "The capital of France is Paris.", "status": "success"}}
-{"timestamp": "2025-01-29 19:04:19,908", "level": "INFO", "message": {"query": "What is the capital of canada", "response": "The capital of France is Paris.", "status": "cached"}}
-{"timestamp": "2025-01-29 19:04:34,220", "level": "INFO", "message": {"query": "What is the capital of turkey", "response": "The capital of Germany is Berlin.", "status": "success"}}
-{"timestamp": "2025-01-29 19:07:55,485", "level": "INFO", "message": {"query": "What is the capital of libya", "response": "The capital of Libya is Tripoli.", "status": "success"}}
-{"timestamp": "2025-01-29 19:12:54,673", "level": "INFO", "message": {"query": "What is the capital of vietnam", "response": "The capital of Vietnam is Hanoi.", "status": "success"}}
-{"timestamp": "2025-01-30 04:18:55,487", "level": "INFO", "message": {"query": "What is the capital of cambodia", "response": "The capital of Cambodia is Phnom Penh.", "status": "success"}}
-{"timestamp": "2025-01-30 04:22:41,883", "level": "INFO", "message": {"query": "What is the capital of laos", "response": "The capital of Laos is Vientiane.", "status": "success"}}
-{"timestamp": "2025-01-30 04:46:12,834", "level": "INFO", "message": {"query": "What is the capital of malaysia", "response": "The capital of Malaysia is Kuala Lumpur.", "status": "success"}}
-{"timestamp": "2025-01-30 04:58:33,619", "level": "INFO", "message": {"query": "What is the capital of malaysia", "response": "The capital of Malaysia is Kuala Lumpur.", "status": "success"}}
-{"timestamp": "2025-01-30 04:58:42,656", "level": "INFO", "message": {"query": "What is the capital of malaysia", "response": "The capital of Malaysia is Kuala Lumpur.", "status": "cached"}}
-{"timestamp": "2025-01-30 04:58:51,228", "level": "INFO", "message": {"query": "What is the capital of laos", "response": "The capital of Laos is Vientiane.", "status": "success"}}
-{"timestamp": "2025-01-30 05:14:14,290", "level": "INFO", "message": {"query": "What is the capital of laos", "response": "The capital of Laos is Vientiane.", "status": "success"}}
-{"timestamp": "2025-01-30 05:29:01,800", "level": "INFO", "message": {"query": "What is the capital of laos", "response": "The capital of Laos is Vientiane.", "status": "success"}}
-{"timestamp": "2025-01-30 05:34:30,496", "level": "INFO", "message": {"query": "What is the capital of laos", "response": "The capital of Laos is Vientiane.", "status": "success"}}
-{"timestamp": "2025-01-30 05:34:44,146", "level": "INFO", "message": {"query": "What is the capital of laos", "response": "The capital of Laos is Vientiane.", "status": "cached"}}
-{"timestamp": "2025-01-30 05:34:54,271", "level": "INFO", "message": {"query": "What is the capital of malaysia", "response": "The capital of Malaysia is Kuala Lumpur.", "status": "success"}}
-{"timestamp": "2025-01-30 05:39:05,853", "level": "INFO", "message": {"query": "What is the capital of malaysia", "response": "The capital of Malaysia is Kuala Lumpur.", "status": "success"}}
-{"timestamp": "2025-01-30 05:43:46,336", "level": "INFO", "message": {"query": "What is the capital of malaysia", "response": "The capital of Malaysia is Kuala Lumpur.", "status": "success"}}
-{"timestamp": "2025-01-31 05:15:23,811", "level": "INFO", "message": {"query": "What is the capital of laos", "response": "The capital of Laos is Vientiane.", "status": "success"}}
-{"timestamp": "2025-01-31 05:16:37,350", "level": "INFO", "message": {"query": "What is the capital of iran", "response": "The capital of Iran is Tehran.", "status": "success"}}
-{"timestamp": "2025-01-31 05:16:49,861", "level": "INFO", "message": {"query": "What is the capital of iran", "response": "The capital of Iran is Tehran.", "status": "cached"}}
-{"timestamp": "2025-01-31 05:17:13,477", "level": "INFO", "message": {"query": "What is the capital of iraq", "response": "The capital of Iraq is Baghdad.", "status": "success"}}
-{"timestamp": "2025-01-31 05:53:51,786", "level": "INFO", "message": {"query": "What is the capital of argentina", "response": "The capital of Argentina is Buenos Aires.", "status": "success"}}
-{"timestamp": "2025-01-31 05:54:11,278", "level": "INFO", "message": {"query": "What is the capital of brazil", "response": "The capital of Argentina is Buenos Aires.", "status": "success"}}
-{"timestamp": "2025-01-31 05:54:13,876", "level": "INFO", "message": {"query": "What is the capital of brazil", "response": "The capital of Argentina is Buenos Aires.", "status": "cached"}}
-{"timestamp": "2025-01-31 05:54:15,074", "level": "INFO", "message": {"query": "What is the capital of brazil", "response": "The capital of Argentina is Buenos Aires.", "status": "cached"}}
-{"timestamp": "2025-01-31 05:54:15,932", "level": "INFO", "message": {"query": "What is the capital of brazil", "response": "The capital of Argentina is Buenos Aires.", "status": "cached"}}
-{"timestamp": "2025-01-31 05:54:16,712", "level": "INFO", "message": {"query": "What is the capital of brazil", "response": "The capital of Argentina is Buenos Aires.", "status": "cached"}}
-{"timestamp": "2025-02-01 05:48:32,598", "level": "INFO", "message": {"query": "What is the capital of brazil", "response": "The capital of Argentina is Buenos Aires.", "status": "success"}}
-{"timestamp": "2025-02-01 05:48:44,294", "level": "INFO", "message": {"query": "What is the capital of fuck", "response": "The capital of Argentina is Buenos Aires.", "status": "success"}}
-{"timestamp": "2025-02-01 05:49:08,953", "level": "INFO", "message": {"query": "what does fuck", "response": "The capital of Argentina is Buenos Aires.", "status": "success"}}
-{"timestamp": "2025-02-01 05:51:00,369", "level": "INFO", "message": {"query": "What is the capital of italy", "response": "The capital of Argentina is Buenos Aires.", "status": "success"}}
-{"timestamp": "2025-02-01 06:20:21,745", "level": "INFO", "message": {"query": "What is the capital of italy", "response": "The capital of Argentina is Buenos Aires.", "status": "success"}}
-{"timestamp": "2025-02-01 06:20:25,593", "level": "INFO", "message": {"query": "What is the capital of italy", "response": "The capital of Argentina is Buenos Aires.", "status": "cached"}}
-{"timestamp": "2025-02-01 06:20:27,601", "level": "INFO", "message": {"query": "What is the capital of italy", "response": "The capital of Argentina is Buenos Aires.", "status": "cached"}}
-{"timestamp": "2025-02-01 06:20:28,753", "level": "INFO", "message": {"query": "What is the capital of italy", "response": "The capital of Argentina is Buenos Aires.", "status": "cached"}}
-{"timestamp": "2025-02-01 06:20:44,096", "level": "INFO", "message": {"query": "What is the capital of iran", "response": "The capital of Argentina is Buenos Aires.", "status": "success"}}
-{"timestamp": "2025-02-01 06:20:47,923", "level": "INFO", "message": {"query": "What is the capital of iran", "response": "The capital of Argentina is Buenos Aires.", "status": "cached"}}
-{"timestamp": "2025-02-01 06:21:30,640", "level": "INFO", "message": {"query": "What is the capital of iran", "response": "The capital of Iran is Tehran.", "status": "success"}}
-{"timestamp": "2025-02-01 06:21:42,350", "level": "INFO", "message": {"query": "What is the capital of italy", "response": "The capital of Iran is Tehran.", "status": "success"}}
-{"timestamp": "2025-02-01 06:21:55,990", "level": "INFO", "message": {"query": "What is the capital of brazil", "response": "The capital of Iran is Tehran.", "status": "success"}}
-{"timestamp": "2025-02-01 06:22:07,271", "level": "INFO", "message": {"query": "What is the capital of laos", "response": "The capital of Iran is Tehran.", "status": "success"}}
-{"timestamp": "2025-02-02 01:50:16,639", "level": "INFO", "message": {"query": "What is the capital of laos", "response": "The capital of Laos is Vientiane.", "status": "success"}}
-{"timestamp": "2025-02-02 01:50:26,798", "level": "INFO", "message": {"query": "What is the capital of brazil", "response": "The capital of Laos is Vientiane.", "status": "success"}}
-{"timestamp": "2025-02-02 03:20:37,069", "level": "INFO", "message": {"query": "What is the capital of brazil", "response": "The capital of Brazil is Bras\u00edlia.", "status": "success"}}
-{"timestamp": "2025-02-02 07:43:59,191", "level": "INFO", "message": {"query": "What is the capital of laos", "response": "The capital of Brazil is Bras\u00edlia.", "status": "success"}}
-{"timestamp": "2025-02-02 10:17:53,644", "level": "INFO", "message": {"query": "What is the capital of brazil", "response": "The capital of Brazil is Bras\u00edlia.", "status": "success"}}
-{"timestamp": "2025-02-02 10:18:04,600", "level": "INFO", "message": {"query": "What is the capital of laos", "response": "The capital of Laos is Vientiane.", "status": "success"}}
-{"timestamp": "2025-02-02 10:18:17,352", "level": "INFO", "message": {"query": "What is the capital of italy", "response": "The capital of Italy is Rome.", "status": "success"}}
+[
+    {
+        "timestamp": "2025-02-10 18:29:40,509",
+        "level": "INFO",
+        "message": {
+            "query": "translate to tagalog cashew?",
+            "response": "The Tagalog word for \"cashew\" is \"kasoy.\"",
+            "status": "success"
+        }
+    },
+    {
+        "timestamp": "2025-02-10 18:30:25,347",
+        "level": "INFO",
+        "message": {
+            "query": "What is the capital of peru?",
+            "response": "The capital of Peru is Lima.",
+            "status": "success"
+        }
+    }
+]

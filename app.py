@@ -1,192 +1,212 @@
-import os
+from flask import Flask, request, jsonify, Response
+from database.db import create_connection
+from openai_integration.openai_utils import get_openai_response, get_openai_embedding
 import json
 import logging
-import logging.handlers
+import os
+import hashlib
+import redis  # ✅ Valkey uses Redis API
 import re
 import mysql.connector
-import nltk
-import redis
-from pinecone import Pinecone, ServerlessSpec
-from flask import Flask, request, jsonify
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
-from cachetools import TTLCache
 from dotenv import load_dotenv
-from openai_integration.openai_utils import get_openai_response, get_openai_embedding
+from pinecone import Pinecone
+from datetime import datetime
 
-# Ensure NLTK is properly installed
-nltk.data.path.append("/home/jeff/nltk_data")
-
-# Load environment variables
+# ✅ Load environment variables
 load_dotenv()
 
-# Flask app initialization
+# ✅ Initialize Flask app
 app = Flask(__name__)
 
-# Rate limiting with Redis
-redis_client = redis.Redis(host="localhost", port=6379, db=0)
-limiter = Limiter(get_remote_address, app=app, storage_uri="redis://localhost:6379")
+# ✅ Configure Rate Limiter using Valkey (Redis API)
+limiter = Limiter(
+    get_remote_address,
+    app=app,
+    storage_uri="redis://localhost:6379",  # ✅ Use Valkey for rate limit tracking
+    default_limits=["10 per minute"]
+)
 
-# Database configuration
+# ✅ Initialize Valkey (Using Redis API)
+valkey_client = redis.Redis(host="localhost", port=6379, db=0)
+CACHE_TTL = 3600  # Cache responses for 1 hour
+
+# ✅ MySQL Database Configuration
 DB_HOST = os.getenv("DB_HOST")
 DB_USER = os.getenv("DB_USER")
 DB_PASSWORD = os.getenv("DB_PASSWORD")
 DB_NAME = os.getenv("DB_NAME")
 
-# Pinecone configuration
+# ✅ Initialize MySQL Connection
+try:
+    db_conn = create_connection()
+    logging.info("✅ Connected to MySQL database successfully.")
+except Exception as e:
+    logging.error(f"❌ Failed to connect to MySQL: {e}")
+    db_conn = None
+
+# ✅ Initialize Pinecone
 PINECONE_API_KEY = os.getenv("PINECONE_API_KEY")
-PINECONE_INDEX_NAME = os.getenv("PINECONE_INDEX")
+PINECONE_INDEX_NAME = os.getenv("PINECONE_INDEX", "chatbot-embeddings")
 
-# Initialize Pinecone
 pc = Pinecone(api_key=PINECONE_API_KEY)
+index = pc.Index(name=PINECONE_INDEX_NAME)
 
-# Define Pinecone Index Name
-PINECONE_INDEX = os.getenv("PINECONE_INDEX", "chatbot-index")  # Set default index name
-
-# Check if index exists, otherwise create it
-if PINECONE_INDEX not in pc.list_indexes().names():
-    print(f"ℹ️ Creating Pinecone index: {PINECONE_INDEX} ...")
-    pc.create_index(
-        name=PINECONE_INDEX,
-        dimension=1536,  # OpenAI embedding size
-        metric="cosine",
-        spec=ServerlessSpec(cloud="aws", region="us-west-2")  # Modify if needed
-    )
+# ✅ Ensure Pinecone Index Exists
+if PINECONE_INDEX_NAME not in pc.list_indexes().names():
+    print(f"ℹ️ Creating Pinecone index: {PINECONE_INDEX_NAME} ...")
+    pc.create_index(name=PINECONE_INDEX_NAME, dimension=3072, metric="cosine")
 else:
-    print(f"✅ Pinecone index '{PINECONE_INDEX}' already exists.")
+    print(f"✅ Pinecone index '{PINECONE_INDEX_NAME}' already exists.")
 
-# Connect to the existing index
-index = pc.Index(PINECONE_INDEX)
+# ✅ Configure Logging
+logging.basicConfig(
+    level=logging.DEBUG,
+    format="%(asctime)s - %(levelname)s - %(message)s",
+    handlers=[logging.StreamHandler()]
+)
 
-# Initialize MySQL connection
-def load_api_keys_from_db():
-    """Load API keys from the MySQL database."""
-    try:
-        conn = mysql.connector.connect(
-            host=DB_HOST,
-            user=DB_USER,
-            password=DB_PASSWORD,
-            database=DB_NAME,
-        )
-        cursor = conn.cursor()
-        cursor.execute("SELECT key_value FROM api_keys")
-        keys = {row[0] for row in cursor.fetchall()}
-        conn.close()
-        return keys
-    except Exception as e:
-        print(f"Error loading API keys: {e}")
-        return set()
+# ✅ Function to get a daily log filename
+def get_log_filename():
+    """Generates a daily rotating log filename."""
+    log_dir = "/home/jeff/devops/aiml1/chatbot-api/logs"
+    os.makedirs(log_dir, exist_ok=True)  # ✅ Ensure logs directory exists
 
-# Load API keys
-VALID_API_KEYS = load_api_keys_from_db()
+    today = datetime.utcnow().strftime("%Y-%m-%d")  # Daily logs
+    return os.path.join(log_dir, f"chatbot_logs_{today}.json")
 
-# Configure logging
-log_file = "chatbot_logs.json"
-logger = logging.getLogger("ChatbotLogger")
-logger.setLevel(logging.INFO)
-file_handler = logging.handlers.RotatingFileHandler(log_file, maxBytes=5 * 1024 * 1024, backupCount=5)
-formatter = logging.Formatter('{"timestamp": "%(asctime)s", "level": "%(levelname)s", "message": %(message)s}')
-file_handler.setFormatter(formatter)
-logger.addHandler(file_handler)
-
-# Configure cache (max size: 1000 entries, TTL: 3600 seconds)
-response_cache = TTLCache(maxsize=1000, ttl=3600)
-
-def log_request(query, response, status="success"):
-    """Log user queries and responses."""
-    log_entry = json.dumps({
-        "query": query,
+# ✅ Function to write logs to a JSON file (Daily Rotation)
+def log_to_json(user_query, response, status="success"):
+    """Logs chatbot interactions to a daily rotating JSON log file."""
+    log_entry = {
+        "timestamp": datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S"),
+        "query": user_query,
         "response": response,
-        "status": status,
-    })
-    logger.info(log_entry)
+        "status": status
+    }
 
-def sanitize_and_validate_input(user_query):
-    """Sanitize and validate user query to ensure it is safe and appropriate."""
+    log_file = get_log_filename()
+    
+    try:
+        with open(log_file, "a", encoding="utf-8") as file:
+            json.dump(log_entry, file, ensure_ascii=False)
+            file.write("\n")  # ✅ New line to separate JSON entries
+        print("✅ Logged query to JSON file.")
+    except Exception as e:
+        print(f"❌ Failed to write to chatbot JSON log: {e}")
+
+# ✅ Function to sanitize user input (prevent hacks & bad input)
+def sanitize_input(user_query):
+    """Sanitizes user input to prevent SQL injection, XSS, and illegal queries."""
     user_query = user_query.strip()
+    
+    # ✅ Prevent SQL injection
+    user_query = re.sub(r"(--|;|'|\"|DROP|ALTER|INSERT|DELETE|UPDATE|SELECT|UNION)", "", user_query, flags=re.IGNORECASE)
 
-    if not user_query or len(user_query) < 3:
-        return False, "Query must be at least 3 characters long."
+    # ✅ Block illegal queries
+    blocked_keywords = ["hack", "exploit", "malware", "illegal", "bypass security"]
+    for keyword in blocked_keywords:
+        if keyword in user_query.lower():
+            return None  # 🚫 Block the request
 
-    blocked_terms = ["illegal", "hack", "exploit", "bypass", "violate"]
-    if any(term in user_query.lower() for term in blocked_terms):
-        return False, "Query contains prohibited content."
+    return user_query
 
-    user_query = re.sub(r'[^\w\s]', '', user_query)
-    return True, user_query
+# ✅ Function to generate a unique hash for queries
+def generate_query_hash(user_query):
+    return hashlib.md5(user_query.encode()).hexdigest()
 
-def cache_get_response(key):
-    """Retrieve cached response if available."""
-    return response_cache.get(key)
+# ✅ Function to store responses in Valkey (Cache)
+def cache_set_response(user_query, response):
+    """Store response in Valkey cache with a unique key."""
+    query_hash = generate_query_hash(user_query)
+    valkey_client.setex(f"query:{query_hash}", CACHE_TTL, json.dumps(response, ensure_ascii=False))
 
-def cache_set_response(key, value):
-    """Set a response in the cache."""
-    response_cache[key] = value
+# ✅ Function to retrieve responses from Valkey (Cache)
+def cache_get_response(user_query):
+    """Retrieve cached response from Valkey using unique key."""
+    query_hash = generate_query_hash(user_query)
+    cached_data = valkey_client.get(f"query:{query_hash}")
+    return json.loads(cached_data.decode("utf-8")) if cached_data else None
 
-def authenticate_request():
-    """Check for a valid API key in the request headers."""
-    api_key = request.headers.get("X-API-Key")
-    return api_key in VALID_API_KEYS
+# ✅ Function to store queries in Pinecone
+def store_query_in_pinecone(user_query, response):
+    """Store each query-response pair uniquely in Pinecone."""
+    embedding = get_openai_embedding(user_query)
+    if not embedding:
+        return
+    
+    query_hash = generate_query_hash(user_query)
 
+    index.upsert(vectors=[
+        {
+            "id": query_hash,  
+            "values": embedding,
+            "metadata": {"query": user_query, "response": response}
+        }
+    ])
+
+# ✅ Function to retrieve queries from Pinecone
+def retrieve_from_pinecone(user_query):
+    """Retrieve the closest stored query response from Pinecone."""
+    embedding = get_openai_embedding(user_query)
+    if not embedding:
+        return None
+
+    results = index.query(vector=embedding, top_k=3, include_metadata=True)
+
+    if results and results.get("matches"):
+        for match in results["matches"]:
+            stored_query = match["metadata"].get("query", "")
+            if stored_query.lower() == user_query.lower():
+                return match["metadata"].get("response", None)
+
+    return None
+
+# ✅ API Route to Handle Queries
 @app.route('/query', methods=['POST'])
 @limiter.limit("10 per minute")
 def handle_query():
-    # Authenticate the request
-    if not authenticate_request():
-        return jsonify({"error": "Unauthorized"}), 401
-
-    data = request.json
-    user_query = data.get("query")
-
-    # Validate and sanitize user query
-    is_valid, sanitized_query = sanitize_and_validate_input(user_query)
-    if not is_valid:
-        log_request(user_query, sanitized_query, status="failure")
-        return jsonify({"error": sanitized_query}), 400
-
-    user_query = sanitized_query  # Use sanitized input moving forward
-
-    # Step 1: Check cache
-    cached_response = cache_get_response(user_query)
-    if cached_response:
-        log_request(user_query, cached_response, status="cached")
-        return jsonify({"response": cached_response})
-
-    # Step 2: Generate embedding for Pinecone query
-    embedding = get_openai_embedding(user_query)
-    if embedding is None:
-        return jsonify({"error": "Failed to generate embedding"}), 500
-
-    # Step 3: Query Pinecone using the embedding
     try:
-        pinecone_results = index.query(vector=embedding, top_k=1, include_metadata=True)
+        data = request.json
+        user_query = data.get("query")
 
-        if pinecone_results and pinecone_results["matches"]:
-            response = pinecone_results["matches"][0]["metadata"]["response"]
-        else:
-            response = None
-    except Exception as e:
-        print(f"❌ Error querying Pinecone: {e}")
-        response = None
+        if not user_query:
+            return jsonify({"error": "Query is required"}), 400
 
-    # Step 4: If no result found, fetch from OpenAI and store in Pinecone
-    if not response:
+        # ✅ Sanitize input
+        user_query = sanitize_input(user_query)
+        if user_query is None:
+            return jsonify({"error": "Invalid query detected"}), 400
+
+        print(f"📝 New Query Received: {user_query}")
+
+        # ✅ Step 1: Check Cache First
+        cached_response = cache_get_response(user_query)
+        if cached_response:
+            log_to_json(user_query, cached_response, status="cached")
+            return jsonify({"response": cached_response})
+
+        # ✅ Step 2: Check Pinecone for Stored Response
+        stored_response = retrieve_from_pinecone(user_query)
+        if stored_response:
+            cache_set_response(user_query, stored_response)  
+            log_to_json(user_query, stored_response, status="pinecone")
+            return jsonify({"response": stored_response})
+        
+        # ✅ Step 3: Query OpenAI for New Response
         response = get_openai_response(user_query)
+        if not response:
+            return jsonify({"error": "Failed to fetch response from OpenAI"}), 500
 
-        try:
-            index.upsert(vectors=[{
-                "id": user_query,  # Ensure ID uniqueness
-                "values": embedding,
-                "metadata": {"query": user_query, "response": response}
-            }])
-        except Exception as e:
-            print(f"❌ Error inserting into Pinecone: {e}")
+        store_query_in_pinecone(user_query, response)
+        cache_set_response(user_query, response)
+        log_to_json(user_query, response)
 
-    # Cache the new response
-    cache_set_response(user_query, response)
+        return jsonify({"response": response})
 
-    log_request(user_query, response)
-    return jsonify({"response": response})
+    except Exception as e:
+        return jsonify({"error": f"Unexpected error: {e}"}), 500
 
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0', port=5001)
