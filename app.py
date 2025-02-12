@@ -10,19 +10,25 @@ from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
 from dotenv import load_dotenv
 from pinecone import Pinecone
-from datetime import datetime, timezone  # ✅ Fix timezone issue
+from datetime import datetime, timezone
+from textblob import TextBlob  # ✅ For spell-checking & sentiment analysis
+import nltk
+from nltk.corpus import wordnet
+from flask import Flask
+from flask_cors import CORS
 
 # ✅ Load environment variables
 load_dotenv()
 
 # ✅ Initialize Flask app
 app = Flask(__name__)
+CORS(app, resources={r"/query": {"origins": "http://localhost:5174"}})
 
 # ✅ Configure Rate Limiter using Valkey (Redis API)
 limiter = Limiter(
     get_remote_address,
     app=app,
-    storage_uri="redis://localhost:6379",  # ✅ Use Valkey for rate limit tracking
+    storage_uri="redis://localhost:6379",
     default_limits=["10 per minute"]
 )
 
@@ -53,20 +59,18 @@ logging.basicConfig(
 
 # ✅ Function to get a daily log filename
 def get_log_filename():
-    """Generates a daily rotating log filename."""
     log_dir = "/home/jeff/devops/aiml1/chatbot-api/logs"
-    os.makedirs(log_dir, exist_ok=True)  # ✅ Ensure logs directory exists
-
-    today = datetime.now(timezone.utc).strftime("%Y-%m-%d")  # ✅ Fix deprecated utcnow()
+    os.makedirs(log_dir, exist_ok=True)
+    today = datetime.now(timezone.utc).strftime("%Y-%m-%d")
     return os.path.join(log_dir, f"chatbot_logs_{today}.json")
 
 # ✅ Function to write logs to a JSON file (Daily Rotation)
-def log_to_json(user_query, response, status="success"):
-    """Logs chatbot interactions to a daily rotating JSON log file."""
+def log_to_json(user_query, response, sentiment, status="success"):
     log_entry = {
-        "timestamp": datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S"),  # ✅ Fix deprecated utcnow()
+        "timestamp": datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S"),
         "query": user_query,
         "response": response,
+        "sentiment": sentiment,
         "status": status
     }
 
@@ -75,15 +79,29 @@ def log_to_json(user_query, response, status="success"):
     try:
         with open(log_file, "a", encoding="utf-8") as file:
             json.dump(log_entry, file, ensure_ascii=False)
-            file.write("\n")  # ✅ New line to separate JSON entries
+            file.write("\n")
         print("✅ Logged query to JSON file.")
     except Exception as e:
         print(f"❌ Failed to write to chatbot JSON log: {e}")
 
-# ✅ Function to sanitize user input (prevent hacks & bad input)
+# ✅ Function to analyze sentiment
+def analyze_sentiment(user_query):
+    """Analyze sentiment of the query."""
+    blob = TextBlob(user_query)
+    return blob.sentiment.polarity  # Returns sentiment score between -1 (negative) to +1 (positive)
+
+# ✅ Function to correct spelling
+def correct_spelling(user_query):
+    """Correct spelling mistakes in user query using TextBlob."""
+    blob = TextBlob(user_query)
+    corrected_query = str(blob.correct())  # Auto-corrects misspelled words
+    return corrected_query
+
+# ✅ Function to sanitize user input
 def sanitize_input(user_query):
-    """Sanitizes user input to prevent SQL injection, XSS, and illegal queries."""
     user_query = user_query.strip()
+    user_query = re.sub(r"[^a-zA-Z0-9,.'?\"\s]", "", user_query)  # Allow valid quotes
+    user_query = user_query.replace('"', '\\"')  # Escape quotes to prevent JSON errors
     
     # ✅ Prevent SQL injection
     user_query = re.sub(r"(--|;|'|\"|DROP|ALTER|INSERT|DELETE|UPDATE|SELECT|UNION)", "", user_query, flags=re.IGNORECASE)
@@ -102,20 +120,17 @@ def generate_query_hash(user_query):
 
 # ✅ Function to store responses in Valkey (Cache)
 def cache_set_response(user_query, response):
-    """Store response in Valkey cache with a unique key."""
     query_hash = generate_query_hash(user_query)
     valkey_client.setex(f"query:{query_hash}", CACHE_TTL, json.dumps(response, ensure_ascii=False))
 
 # ✅ Function to retrieve responses from Valkey (Cache)
 def cache_get_response(user_query):
-    """Retrieve cached response from Valkey using unique key."""
     query_hash = generate_query_hash(user_query)
     cached_data = valkey_client.get(f"query:{query_hash}")
     return json.loads(cached_data.decode("utf-8")) if cached_data else None
 
 # ✅ Function to store queries in Pinecone
 def store_query_in_pinecone(user_query, response):
-    """Store each query-response pair uniquely in Pinecone."""
     embedding = get_openai_embedding(user_query)
     if not embedding:
         return
@@ -132,7 +147,6 @@ def store_query_in_pinecone(user_query, response):
 
 # ✅ Function to retrieve queries from Pinecone
 def retrieve_from_pinecone(user_query):
-    """Retrieve the closest stored query response from Pinecone."""
     embedding = get_openai_embedding(user_query)
     if not embedding:
         return None
@@ -158,39 +172,68 @@ def handle_query():
         if not user_query:
             return jsonify({"error": "Query is required"}), 400
 
+        # ✅ Preserve original query to avoid unnecessary alterations
+        original_query = user_query
+
+        # ✅ Spell-check & correct query
+        corrected_query = correct_spelling(user_query)
+        if corrected_query.lower() != user_query.lower():
+            print(f"📝 Spell-corrected Query: {corrected_query}")
+            user_query = corrected_query
+
+        # ✅ Analyze sentiment
+        sentiment = analyze_sentiment(user_query)
+        print(f"📊 Sentiment Score: {sentiment}")
+
         # ✅ Sanitize input
         user_query = sanitize_input(user_query)
         if user_query is None:
             return jsonify({"error": "Invalid query detected"}), 400
 
-        print(f"📝 New Query Received: {user_query}")
+        print(f"📝 Final Query Sent to OpenAI: {user_query}")
 
         # ✅ Step 1: Check Cache First
         cached_response = cache_get_response(user_query)
         if cached_response:
-            log_to_json(user_query, cached_response, status="cached")
             return jsonify({"response": cached_response})
 
         # ✅ Step 2: Check Pinecone for Stored Response
         stored_response = retrieve_from_pinecone(user_query)
         if stored_response:
-            cache_set_response(user_query, stored_response)  
-            log_to_json(user_query, stored_response, status="pinecone")
+            cache_set_response(user_query, stored_response)
             return jsonify({"response": stored_response})
-        
-        # ✅ Step 3: Query OpenAI for New Response
-        response = get_openai_response(user_query)
-        if not response:
-            return jsonify({"error": "Failed to fetch response from OpenAI"}), 500
 
+        # ✅ Step 3: Query OpenAI for New Response
+        # Improve accuracy for factual/geographic queries
+        geo_keywords = ["where is", "elevation of", "location of", "map of", "distance to"]
+        if any(keyword in user_query.lower() for keyword in geo_keywords):
+            print("🌍 Detected a geographical query, enforcing accuracy.")
+            user_query = f"Provide the exact geographical information for: {original_query}. Use reliable sources."
+
+        openai_instruction = (
+            "You are a highly accurate chatbot. Respond with correct and factual information. "
+            "Strictly follow the query's wording. Do not alter names or interpret differently. "
+            "If unsure, respond with 'I do not have the exact data.' rather than guessing. "
+        )
+
+        response = get_openai_response(openai_instruction + user_query)
+
+        # ✅ Validate response before caching
+        unlikely_responses = ["Camp Provide", "I do not know", "I'm not sure"]
+        if any(term in response for term in unlikely_responses):
+            print(f"⚠️ OpenAI returned an unlikely response: {response}. Re-querying with refined input...")
+            response = get_openai_response(openai_instruction + f"Provide factual location-based information for: {original_query}")
+
+        # ✅ Store in Pinecone & Cache
         store_query_in_pinecone(user_query, response)
         cache_set_response(user_query, response)
-        log_to_json(user_query, response)
 
         return jsonify({"response": response})
 
     except Exception as e:
         return jsonify({"error": f"Unexpected error: {e}"}), 500
+
+
 
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0', port=5001)
