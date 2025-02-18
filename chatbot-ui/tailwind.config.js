@@ -1,12 +1,17 @@
 /** @type {import('tailwindcss').Config} */
-module.exports = {
-  purge: ["./index.html", "./src/**/*.{js,ts,jsx,tsx}"], // Ensure Tailwind works in your components
-  darkMode: false, // or 'media' or 'class'
+export default {
+  content: ["./index.html", "./src/**/*.{js,ts,jsx,tsx}"],
+  darkMode: 'class', // ✅ Forces dark mode toggle to use "class"
   theme: {
-    extend: {},
-  },
-  variants: {
-    extend: {},
+    extend: {
+      colors: {
+        primary: "#4F46E5", // Custom primary color
+        backgroundLight: "#F3F4F6",
+        backgroundDark: "#1E1E1E",
+        messageUser: "#2563EB",
+        messageBot: "#E5E7EB",
+      },
+    },
   },
   plugins: [],
 };

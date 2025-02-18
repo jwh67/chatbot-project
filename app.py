@@ -1,6 +1,7 @@
 from flask import Flask, request, jsonify
 from openai_integration.openai_utils import get_openai_response, get_openai_embedding
 import json
+import html
 import logging
 import os
 import hashlib
@@ -22,7 +23,8 @@ load_dotenv()
 
 # ✅ Initialize Flask app
 app = Flask(__name__)
-CORS(app, resources={r"/query": {"origins": "http://localhost:5174"}})
+CORS(app, resources={r"/query": {"origins": "*"}})  # Allow all origins (for testing)
+
 
 # ✅ Configure Rate Limiter using Valkey (Redis API)
 limiter = Limiter(
@@ -166,31 +168,20 @@ def retrieve_from_pinecone(user_query):
 @limiter.limit("10 per minute")
 def handle_query():
     try:
-        data = request.json
+        data = request.get_json(force=True)  # Force parse JSON to avoid decoding errors
         user_query = data.get("query")
 
         if not user_query:
             return jsonify({"error": "Query is required"}), 400
 
-        # ✅ Preserve original query to avoid unnecessary alterations
+        # ✅ Preserve original query to avoid unnecessary modifications
         original_query = user_query
 
-        # ✅ Spell-check & correct query
-        corrected_query = correct_spelling(user_query)
-        if corrected_query.lower() != user_query.lower():
-            print(f"📝 Spell-corrected Query: {corrected_query}")
-            user_query = corrected_query
+        # ✅ Escape double quotes properly for JSON
+        user_query = html.escape(user_query)  # Converts " to &quot; safely
 
-        # ✅ Analyze sentiment
-        sentiment = analyze_sentiment(user_query)
-        print(f"📊 Sentiment Score: {sentiment}")
-
-        # ✅ Sanitize input
-        user_query = sanitize_input(user_query)
-        if user_query is None:
-            return jsonify({"error": "Invalid query detected"}), 400
-
-        print(f"📝 Final Query Sent to OpenAI: {user_query}")
+        # ✅ Log sanitized query
+        print(f"📝 Sanitized Query for OpenAI: {user_query}")
 
         # ✅ Step 1: Check Cache First
         cached_response = cache_get_response(user_query)
@@ -204,12 +195,6 @@ def handle_query():
             return jsonify({"response": stored_response})
 
         # ✅ Step 3: Query OpenAI for New Response
-        # Improve accuracy for factual/geographic queries
-        geo_keywords = ["where is", "elevation of", "location of", "map of", "distance to"]
-        if any(keyword in user_query.lower() for keyword in geo_keywords):
-            print("🌍 Detected a geographical query, enforcing accuracy.")
-            user_query = f"Provide the exact geographical information for: {original_query}. Use reliable sources."
-
         openai_instruction = (
             "You are a highly accurate chatbot. Respond with correct and factual information. "
             "Strictly follow the query's wording. Do not alter names or interpret differently. "
@@ -218,21 +203,16 @@ def handle_query():
 
         response = get_openai_response(openai_instruction + user_query)
 
-        # ✅ Validate response before caching
-        unlikely_responses = ["Camp Provide", "I do not know", "I'm not sure"]
-        if any(term in response for term in unlikely_responses):
-            print(f"⚠️ OpenAI returned an unlikely response: {response}. Re-querying with refined input...")
-            response = get_openai_response(openai_instruction + f"Provide factual location-based information for: {original_query}")
-
         # ✅ Store in Pinecone & Cache
-        store_query_in_pinecone(user_query, response)
-        cache_set_response(user_query, response)
+        store_query_in_pinecone(original_query, response)
+        cache_set_response(original_query, response)
 
         return jsonify({"response": response})
 
+    except json.JSONDecodeError as e:
+        return jsonify({"error": f"Invalid JSON format: {str(e)}"}), 400
     except Exception as e:
-        return jsonify({"error": f"Unexpected error: {e}"}), 500
-
+        return jsonify({"error": f"Unexpected error: {str(e)}"}), 500
 
 
 if __name__ == '__main__':
