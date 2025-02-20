@@ -1,0 +1,129 @@
+/* General Styles */
+body {
+  font-family: Arial, sans-serif;
+  background-color: #f4f4f4;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100vh;
+  margin: 0;
+}
+
+.dark-mode {
+  background-color: #1a1a1a;
+  color: white;
+}
+
+/* Chat Container */
+.chat-container {
+  display: flex;
+  flex-direction: column;
+  width: 80%;
+  max-width: 600px;
+  background: white;
+  border-radius: 10px;
+  overflow: hidden;
+  box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.1);
+}
+
+.dark-mode .chat-container {
+  background: #2c2c2c;
+}
+
+/* Header */
+.chat-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 15px;
+  background: #ff002b;
+  color: white;
+  font-size: 1.2rem;
+  font-weight: bold;
+}
+
+.toggle-theme {
+  background: none;
+  border: none;
+  color: white;
+  cursor: pointer;
+}
+
+/* Chat Messages */
+.chat-messages {
+  padding: 15px;
+  height: 300px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+}
+
+.chat-bubble {
+  padding: 10px;
+  border-radius: 8px;
+  margin: 5px 0;
+  max-width: 80%;
+}
+
+.user {
+  align-self: flex-end;
+  background: #0078ff;
+  color: white;
+}
+
+.bot {
+  align-self: flex-start;
+  background: #e0e0e0;
+  color: black;
+}
+
+/* Pre-Made Query Buttons */
+.suggestions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  padding: 10px;
+  gap: 10px;
+}
+
+.suggestion-btn {
+  padding: 10px 15px;
+  border: none;
+  background: #0078ff;
+  color: white;
+  border-radius: 20px;
+  cursor: pointer;
+  transition: 0.3s;
+}
+
+.suggestion-btn:hover {
+  background: #005bb5;
+}
+
+/* Chat Footer */
+.chat-footer {
+  display: flex;
+  align-items: center;
+  padding: 10px;
+  border-top: 1px solid #ccc;
+}
+
+.chat-input {
+  flex-grow: 1;
+  padding: 10px;
+  border: none;
+  border-radius: 20px;
+  font-size: 1rem;
+  background: #f4f4f4;
+  margin: 0 10px;
+}
+
+.large-input {
+  width: 100%;
+}
+
+.send-btn, .upload-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+}
