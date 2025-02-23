@@ -1,0 +1,40 @@
+version: "3.8"
+
+services:
+  backend:
+    build:
+      context: ./chatbot-api
+    ports:
+      - "5001:5001"
+    environment:
+      - FLASK_ENV=development
+    volumes:
+      - ./chatbot-api:/app
+    depends_on:
+      - db
+
+  frontend:
+    build:
+      context: ./chatbot-ui
+    ports:
+      - "5173:5173"
+    volumes:
+      - ./chatbot-ui:/app
+    depends_on:
+      - backend
+
+  db:
+    image: mariadb:latest
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: rootpassword
+      MYSQL_DATABASE: chatbotdb
+      MYSQL_USER: chatbot
+      MYSQL_PASSWORD: chatbotpassword
+    ports:
+      - "3306:3306"
+    volumes:
+      - chatbot-db-data:/var/lib/mysql
+
+volumes:
+  chatbot-db-data:
