@@ -12,26 +12,56 @@ export default function ChatApp() {
     document.body.classList.toggle("dark-mode", darkMode);
   }, [darkMode]);
 
-  const sendMessage = async (query = null) => {
-    const message = query || input.trim();
+  const sendMessage = async (query = null, event = null) => {
+    if (event && event.preventDefault) event.preventDefault();
+
+    const message = typeof query === "string" ? query.trim() : input.trim();
     if (!message) return;
 
-    setMessages((prev) => [...prev, { role: "user", content: message }]);
+    setMessages((prev) => [...prev, { text: message, sender: "user" }]);
     setInput("");
 
-    try {
-      console.log("Sending query:", message);
-      const response = await axios.post("http://localhost:5001/query", { query: message });
+    console.log("📡 Sending query:", message);
 
-      if (response.data && response.data.response && typeof response.data.response === "string") {
-        console.log("Received response:", response.data.response);
-        setMessages((prev) => [...prev, { role: "bot", content: response.data.response }]);
-      } else {
-        throw new Error("Invalid API response format");
-      }
+    try {
+        const requestData = { query: message };
+        console.log("📝 Request Data (Before Sending):", requestData);
+
+        const response = await axios.post(
+            "http://localhost:5001/query",
+            requestData,
+            { headers: { "Content-Type": "application/json" } }
+        );
+
+        console.log("✅ Raw Response:", response);
+        console.log("📜 Response Data:", response.data);
+
+        // ✅ Handle API Response Properly
+        if (response?.data && typeof response.data === "object") {
+            if (response.data.response && typeof response.data.response === "string") {
+                let botResponse = response.data.response.trim();
+                console.log("🛠 Extracted Response:", botResponse);
+                setMessages((prev) => [...prev, { text: botResponse, sender: "bot" }]);
+            } else {
+                console.error("⚠️ Unexpected response format: Missing 'response' key", response.data);
+                setMessages((prev) => [
+                    ...prev,
+                    { text: "⚠️ Unexpected response format (missing 'response' key).", sender: "bot" }
+                ]);
+            }
+        } else {
+            console.error("⚠️ Unexpected response format: `response.data` is invalid", response?.data);
+            setMessages((prev) => [
+                ...prev,
+                { text: "⚠️ Unexpected response format (response.data is invalid).", sender: "bot" }
+            ]);
+        }
     } catch (error) {
-      console.error("Error fetching response:", error);
-      setMessages((prev) => [...prev, { role: "bot", content: "⚠️ Error fetching response. Please try again!" }]);
+        console.error("❌ Error fetching response:", error);
+        setMessages((prev) => [
+            ...prev,
+            { text: `⚠️ Error fetching response: ${error.message}`, sender: "bot" }
+        ]);
     }
   };
 
@@ -42,7 +72,7 @@ export default function ChatApp() {
         alert("⚠️ Only text-based files are allowed!");
         return;
       }
-      setMessages((prev) => [...prev, { role: "user", content: `📂 Uploaded: ${uploadedFile.name}` }]);
+      setMessages((prev) => [...prev, { sender: "user", text: `📂 Uploaded: ${uploadedFile.name}` }]);
     }
   };
 
@@ -64,7 +94,7 @@ export default function ChatApp() {
 
         <div className="suggestions">
           {suggestions.map((text, idx) => (
-            <button key={idx} onClick={() => sendMessage(text)} className="suggestion-btn">
+            <button key={idx} onClick={() => sendMessage(text)} className="suggestion-btn upgraded-bubble">
               {text}
             </button>
           ))}
@@ -72,8 +102,8 @@ export default function ChatApp() {
 
         <div className="chat-messages">
           {messages.map((msg, index) => (
-            <div key={index} className={`chat-bubble ${msg.role}`}>
-              {typeof msg.content === "string" ? msg.content : "⚠️ Unexpected response format"}
+            <div key={index} className={`chat-bubble ${msg.sender}`}>
+              {typeof msg.text === "string" ? msg.text : "⚠️ Unexpected response format"}
             </div>
           ))}
         </div>
@@ -85,13 +115,13 @@ export default function ChatApp() {
           </label>
           <input
             type="text"
-            className="chat-input large-input"
+            className="chat-input large-input enhanced-input"
             placeholder="Type a message..."
             value={input}
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={(e) => e.key === "Enter" && sendMessage()}
           />
-          <button onClick={sendMessage} className="send-btn">
+          <button onClick={sendMessage} className="send-btn enhanced-btn">
             <Send size={24} />
           </button>
         </footer>

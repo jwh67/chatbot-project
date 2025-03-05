@@ -25,7 +25,6 @@ load_dotenv()
 app = Flask(__name__)
 CORS(app, resources={r"/query": {"origins": "*"}})  # Allow all origins (for testing)
 
-
 # ✅ Configure Rate Limiter using Valkey (Redis API)
 limiter = Limiter(
     get_remote_address,
@@ -67,12 +66,12 @@ def get_log_filename():
     return os.path.join(log_dir, f"chatbot_logs_{today}.json")
 
 # ✅ Function to write logs to a JSON file (Daily Rotation)
-def log_to_json(user_query, response, sentiment, status="success"):
+def log_to_json(user_query, response, source, status="success"):
     log_entry = {
         "timestamp": datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S"),
         "query": user_query,
         "response": response,
-        "sentiment": sentiment,
+        "source": source,
         "status": status
     }
 
@@ -85,36 +84,6 @@ def log_to_json(user_query, response, sentiment, status="success"):
         print("✅ Logged query to JSON file.")
     except Exception as e:
         print(f"❌ Failed to write to chatbot JSON log: {e}")
-
-# ✅ Function to analyze sentiment
-def analyze_sentiment(user_query):
-    """Analyze sentiment of the query."""
-    blob = TextBlob(user_query)
-    return blob.sentiment.polarity  # Returns sentiment score between -1 (negative) to +1 (positive)
-
-# ✅ Function to correct spelling
-def correct_spelling(user_query):
-    """Correct spelling mistakes in user query using TextBlob."""
-    blob = TextBlob(user_query)
-    corrected_query = str(blob.correct())  # Auto-corrects misspelled words
-    return corrected_query
-
-# ✅ Function to sanitize user input
-def sanitize_input(user_query):
-    user_query = user_query.strip()
-    user_query = re.sub(r"[^a-zA-Z0-9,.'?\"\s]", "", user_query)  # Allow valid quotes
-    user_query = user_query.replace('"', '\\"')  # Escape quotes to prevent JSON errors
-    
-    # ✅ Prevent SQL injection
-    user_query = re.sub(r"(--|;|'|\"|DROP|ALTER|INSERT|DELETE|UPDATE|SELECT|UNION)", "", user_query, flags=re.IGNORECASE)
-
-    # ✅ Block illegal queries
-    blocked_keywords = ["hack", "exploit", "malware", "illegal", "bypass security"]
-    for keyword in blocked_keywords:
-        if keyword in user_query.lower():
-            return None  # 🚫 Block the request
-
-    return user_query
 
 # ✅ Function to generate a unique hash for queries
 def generate_query_hash(user_query):
@@ -186,12 +155,14 @@ def handle_query():
         # ✅ Step 1: Check Cache First
         cached_response = cache_get_response(user_query)
         if cached_response:
+            log_to_json(original_query, cached_response, "cached", "success")
             return jsonify({"response": cached_response})
 
         # ✅ Step 2: Check Pinecone for Stored Response
         stored_response = retrieve_from_pinecone(user_query)
         if stored_response:
             cache_set_response(user_query, stored_response)
+            log_to_json(original_query, stored_response, "pinecone", "success")
             return jsonify({"response": stored_response})
 
         # ✅ Step 3: Query OpenAI for New Response
@@ -202,10 +173,14 @@ def handle_query():
         )
 
         response = get_openai_response(openai_instruction + user_query)
+        print(f"✅ OpenAI Raw Response: {response}")  # Debugging Output
 
         # ✅ Store in Pinecone & Cache
         store_query_in_pinecone(original_query, response)
         cache_set_response(original_query, response)
+
+        # ✅ Log final response
+        log_to_json(original_query, response, "processed", "success")
 
         return jsonify({"response": response})
 
@@ -213,7 +188,6 @@ def handle_query():
         return jsonify({"error": f"Invalid JSON format: {str(e)}"}), 400
     except Exception as e:
         return jsonify({"error": f"Unexpected error: {str(e)}"}), 500
-
 
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0', port=5001)
