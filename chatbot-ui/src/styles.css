@@ -127,3 +127,72 @@ body {
   border: none;
   cursor: pointer;
 }
+
+.chat-controls {
+  display: flex;
+  gap: 0.5rem;
+  margin-top: 4px;
+}
+
+.chat-btn {
+  background: transparent;
+  border: none;
+  font-size: 1.2rem;
+  cursor: pointer;
+  transition: transform 0.1s;
+}
+
+.chat-btn:hover {
+  transform: scale(1.2);
+}
+
+.copy-btn {
+  color: #4dabf7; /* Bright Blue */
+}
+
+.copy-btn:hover {
+  color: #1c7ed6;
+}
+
+.like-btn {
+  color: #40c057; /* Vivid Green */
+}
+
+.like-btn:hover {
+  color: #2b8a3e;
+}
+
+.dislike-btn {
+  color: #f03e3e; /* Bold Red */
+}
+
+.dislike-btn:hover {
+  color: #c92a2a;
+}
+
+.edit-btn {
+  margin-left: 10px;
+  color: #fab005;
+}
+
+.edit-btn:hover {
+  color: #e67700;
+}
+
+.edit-input {
+  width: 90%;
+  padding: 4px 8px;
+  font-size: 1rem;
+  margin-top: 4px;
+  border-radius: 6px;
+  border: 1px solid #ccc;
+}
+
+.speak-btn {
+  margin-left: 10px;
+  color: #5c7cfa;
+}
+
+.speak-btn:hover {
+  color: #364fc7;
+}

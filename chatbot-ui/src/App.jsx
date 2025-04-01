@@ -7,6 +7,9 @@ export default function ChatApp() {
   const [darkMode, setDarkMode] = useState(false);
   const [input, setInput] = useState("");
   const [messages, setMessages] = useState([]);
+  const [editingIndex, setEditingIndex] = useState(null);
+  const [editingText, setEditingText] = useState("");
+
 
   useEffect(() => {
     document.body.classList.toggle("dark-mode", darkMode);
@@ -28,7 +31,7 @@ export default function ChatApp() {
         console.log("📝 Request Data (Before Sending):", requestData);
 
         const response = await axios.post(
-            "http://localhost:5001/query",
+            "http://192.168.0.182:5001/query",
             requestData,
             { headers: { "Content-Type": "application/json" } }
         );
@@ -82,6 +85,17 @@ export default function ChatApp() {
     "Tell me a fun fact about space",
   ];
 
+  const speakText = (text) => {
+    if ("speechSynthesis" in window) {
+      const utterance = new SpeechSynthesisUtterance(text);
+      utterance.lang = "en-US"; // You can change this if needed
+      window.speechSynthesis.speak(utterance);
+    } else {
+      alert("Sorry, your browser does not support text-to-speech.");
+    }
+  };
+  
+
   return (
     <div className="chat-container">
       <div className="chat-box">
@@ -101,12 +115,91 @@ export default function ChatApp() {
         </div>
 
         <div className="chat-messages">
-          {messages.map((msg, index) => (
-            <div key={index} className={`chat-bubble ${msg.sender}`}>
-              {typeof msg.text === "string" ? msg.text : "⚠️ Unexpected response format"}
-            </div>
-          ))}
+  {messages.map((msg, index) => (
+    <div key={index} className={`chat-bubble ${msg.sender}`}>
+      <div className="chat-message-text">
+      {editingIndex === index ? (
+  <>
+    <input
+      type="text"
+      value={editingText}
+      onChange={(e) => setEditingText(e.target.value)}
+      onKeyDown={(e) => {
+        if (e.key === "Enter") {
+          setMessages((prev) =>
+            prev.map((m, i) =>
+              i === index ? { ...m, text: editingText } : m
+            )
+          );
+          setEditingIndex(null);
+          sendMessage(editingText); // Resend edited message
+        }
+      }}
+      className="edit-input"
+      autoFocus
+    />
+  </>
+) : (
+  <>
+    <>
+  {msg.text}
+  {msg.sender === "bot" && (
+    <button
+      className="speak-btn chat-btn"
+      title="Play Audio"
+      onClick={() => speakText(msg.text)}
+    >
+      🔊
+    </button>
+  )}
+</>
+
+    {msg.sender === "user" && (
+      <button
+        className="edit-btn chat-btn"
+        title="Edit"
+        onClick={() => {
+          setEditingIndex(index);
+          setEditingText(msg.text);
+        }}
+      >
+        ✏️
+      </button>
+    )}
+  </>
+)}
+
+      </div>
+
+      {msg.sender === "bot" && (
+        <div className="chat-controls">
+          <button
+            onClick={() => navigator.clipboard.writeText(msg.text)}
+            title="Copy to clipboard"
+            className="chat-btn copy-btn"
+          >
+            📋
+          </button>
+          <button
+            onClick={() => console.log("👍 Liked response")}
+            title="Like"
+            className="chat-btn like-btn"
+          >
+            👍
+          </button>
+          <button
+            onClick={() => console.log("👎 Disliked response")}
+            title="Dislike"
+            className="chat-btn dislike-btn"
+          >
+            👎
+          </button>
         </div>
+      )}
+    </div>
+  ))}
+</div>
+
 
         <footer className="chat-footer">
           <label className="upload-btn">
