@@ -1,0 +1,31 @@
+{
+    "greeting": [
+      "Hello! How can I help you today?",
+      "Hi there! What can I assist you with?"
+    ],
+    "goodbye": [
+      "Goodbye! Have a great day!",
+      "See you again soon."
+    ],
+    "hours": [
+      "We are open 24/7 to support our global clients."
+    ],
+    "services": [
+      "We offer inbound and outbound call center services, live chat support, email handling, and virtual assistant solutions."
+    ],
+    "location": [
+      "Our office is based in Manila, Philippines."
+    ],
+    "languages": [
+      "Our agents are fluent in English, Filipino, and some also speak Spanish and French."
+    ],
+    "pricing": [
+      "Pricing varies depending on the services required. Please contact our sales team for a custom quote."
+    ],
+    "support": [
+      "Of course! I'm here to help. Could you tell me more about your issue?"
+    ],
+    "agent": [
+      "Sure, connecting you to a live agent now..."
+    ]
+  }

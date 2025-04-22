@@ -1,0 +1,110 @@
+{
+    "intents": [
+      {
+        "tag": "greeting",
+        "patterns": [
+          "Hi",
+          "Hello",
+          "Good day",
+          "Hey"
+        ],
+        "responses": [
+          "Hello! How can I help you today?",
+          "Hi there! What can I assist you with?"
+        ]
+      },
+      {
+        "tag": "goodbye",
+        "patterns": [
+          "Bye",
+          "See you",
+          "Goodbye",
+          "Catch you later"
+        ],
+        "responses": [
+          "Goodbye! Have a great day!",
+          "See you again soon."
+        ]
+      },
+      {
+        "tag": "hours",
+        "patterns": [
+          "What are your business hours?",
+          "When are you open?",
+          "Business hours?",
+          "when do you open?",
+          "when is your opening time?",
+          "what time are you available?"
+        ],
+        "responses": [
+          "We are open 24/7 to support our global clients."
+        ]
+      },
+      {
+        "tag": "services",
+        "patterns": [
+          "What services do you offer?",
+          "Tell me about your services",
+          "Call center services?"
+        ],
+        "responses": [
+          "We offer inbound and outbound call center services, live chat support, email handling, and virtual assistant solutions."
+        ]
+      },
+      {
+        "tag": "location",
+        "patterns": [
+          "Where are you located?",
+          "Your address?",
+          "Where is your office?"
+        ],
+        "responses": [
+          "Our office is based in Manila, Philippines."
+        ]
+      },
+      {
+        "tag": "languages",
+        "patterns": [
+          "What languages do your agents speak?",
+          "Languages supported?",
+          "Do you support Spanish or French?"
+        ],
+        "responses": [
+          "Our agents are fluent in English, Filipino, and some also speak Spanish and French."
+        ]
+      },
+      {
+        "tag": "pricing",
+        "patterns": [
+          "How much do your services cost?",
+          "Pricing info",
+          "Cost of services?"
+        ],
+        "responses": [
+          "Pricing varies depending on the services required. Please contact our sales team for a custom quote."
+        ]
+      },
+      {
+        "tag": "support",
+        "patterns": [
+          "I need help",
+          "Support please",
+          "Can someone assist me?"
+        ],
+        "responses": [
+          "Of course! I'm here to help. Could you tell me more about your issue?"
+        ]
+      },
+      {
+        "tag": "agent",
+        "patterns": [
+          "Can I speak to a human?",
+          "I want to talk to an agent",
+          "Live agent please"
+        ],
+        "responses": [
+          "Sure, connecting you to a live agent now..."
+        ]
+      }
+    ]
+  }

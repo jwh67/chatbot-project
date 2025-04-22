@@ -16,12 +16,21 @@ from textblob import TextBlob  # ✅ For spell-checking & sentiment analysis
 import nltk
 from nltk.corpus import wordnet
 from flask_cors import CORS
+import difflib # ✅ For fuzzy matching
 
 # ✅ Prevent "unused" warning from Pylance
 _ = get_openai_embedding
 
 # ✅ Load environment variables
 load_dotenv()
+
+# ✅ Load intents and responses at app start
+with open("data/intents.json", "r", encoding="utf-8") as f:
+    intent_data = json.load(f)
+    intents = intent_data.get("intents", [])
+
+with open("data/responses.json", "r", encoding="utf-8") as f:
+    responses = json.load(f)
 
 # ✅ Download necessary NLTK data
 nltk.download('punkt')
@@ -162,6 +171,7 @@ def handle_query():
         sentiment = analyze_sentiment(user_query)
         suggested_query = correct_spelling(user_query)
         synonyms = get_synonyms(user_query)
+        user_query_lower = user_query.lower()
 
         # ✅ Step 1: Check Cache
         cached_response = cache_get_response(user_query)
@@ -186,11 +196,40 @@ def handle_query():
                 "synonyms": synonyms
             })
 
-        # ✅ Step 3: Query OpenAI
+                        # ✅ Step 3: Fuzzy Match Intents Before Calling OpenAI
+        user_query_lower = user_query.lower()
+
+        best_tag = None
+        highest_ratio = 0.0
+
+        for intent in intents:
+            tag = intent.get("tag")
+            for pattern in intent.get("patterns", []):
+                pattern_lower = pattern.lower()
+                ratio = difflib.SequenceMatcher(None, user_query_lower, pattern_lower).ratio()
+                if ratio > highest_ratio:
+                    highest_ratio = ratio
+                    best_tag = tag
+
+        # ✅ If fuzzy match confidence is strong enough (e.g. > 0.7), return canned response
+        if highest_ratio > 0.7 and best_tag:
+            matched_response = responses.get(best_tag, "I'm not sure how to respond to that.")
+            if isinstance(matched_response, list):
+                matched_response = matched_response[0]
+
+            log_to_json(user_query, matched_response, "intent-fuzzy", "matched")
+            return jsonify({
+                "response": matched_response,
+                "sentiment": sentiment,
+                "suggested_query": suggested_query,
+                "synonyms": synonyms
+            })
+
+
+        # ✅ Step 4: Query OpenAI
         response = get_openai_response(user_query)
         response = response if isinstance(response, str) else "⚠️ Unexpected response format."
 
-        # ✅ Store and Log
         store_query_in_pinecone(user_query, response)
         cache_set_response(user_query, response)
         log_to_json(user_query, response, "openai", "success")
@@ -201,6 +240,7 @@ def handle_query():
             "suggested_query": suggested_query,
             "synonyms": synonyms
         })
+
 
     except json.JSONDecodeError as e:
         return jsonify({"error": f"Invalid JSON format: {str(e)}"}), 400
