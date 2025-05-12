@@ -4,6 +4,7 @@ import json
 import html
 import logging
 import os
+import random 
 import hashlib
 import redis  # ✅ Valkey uses Redis API
 import re
@@ -173,6 +174,19 @@ def handle_query():
         synonyms = get_synonyms(user_query)
         user_query_lower = user_query.lower()
 
+        # ✅ intent_keywords required for scoring & fallback
+        intent_keywords = {
+            "greeting": ["hi", "hello", "hey", "greetings"],
+            "goodbye": ["bye", "goodbye", "see you", "later"],
+            "hours": ["open", "close", "hours", "when are you", "time"],
+            "services": ["services", "support", "chat", "call center", "help desk"],
+            "languages": ["languages", "speak", "Spanish", "French", "Filipino"],
+            "location": ["location", "office", "where", "address"],
+            "pricing": ["pricing", "cost", "charge", "rate", "how much"],
+            "support": ["assist", "help", "issue"],
+            "agent": ["human", "agent", "representative", "live person"]
+        }
+
         # ✅ Step 1: Check Cache
         cached_response = cache_get_response(user_query)
         if cached_response:
@@ -184,7 +198,67 @@ def handle_query():
                 "synonyms": synonyms
             })
 
-        # ✅ Step 2: Check Pinecone
+        # ✅ Step 2a: Intent Matching (fuzzy + keywords)
+        print(f"\n🧪 Incoming query: {user_query_lower}")
+        best_score = 0.0
+        matched_tag = None
+
+        for intent in intents:
+            tag = intent.get("tag")
+            print(f"📂 Checking intent: {tag}")
+            for pattern in intent.get("patterns", []):
+                print(f"   🔸 Pattern: {pattern}")
+                pattern_lower = pattern.lower()
+                score = difflib.SequenceMatcher(None, user_query_lower, pattern_lower).ratio()
+
+                if any(word in user_query_lower for word in intent_keywords.get(tag, [])):
+                    score += 0.15
+
+                if score > best_score:
+                    best_score = score
+                    matched_tag = tag
+
+                if pattern_lower in user_query_lower or user_query_lower in pattern_lower:
+                    best_score = 1.0
+                    matched_tag = tag
+                    break
+
+        print(f"🔍 Best fuzzy match score: {best_score}, matched tag: {matched_tag}")
+
+        if matched_tag and best_score >= 0.5:
+            matched_response = responses.get(matched_tag)
+            if isinstance(matched_response, list):
+                matched_response = random.choice(matched_response)
+            elif not matched_response:
+                matched_response = "I'm not sure how to respond to that."
+
+            print(f"DEBUG: ✅ Intent matched - tag='{matched_tag}' with score={round(best_score, 2)}")
+            log_to_json(user_query, matched_response, "intent", f"matched@{round(best_score, 2)}")
+            return jsonify({
+                "response": matched_response,
+                "sentiment": sentiment,
+                "suggested_query": suggested_query,
+                "synonyms": synonyms
+            })
+
+        # ✅ Step 2b: Keyword fallback
+        for tag, keywords in intent_keywords.items():
+            for word in keywords:
+                if word.lower() in user_query_lower:
+                    matched_response = responses.get(tag, "I'm not sure how to respond to that.")
+                    if isinstance(matched_response, list):
+                        matched_response = random.choice(matched_response)
+
+                    print(f"DEBUG: ⚠️ Keyword-only fallback matched tag='{tag}' via word='{word}'")
+                    log_to_json(user_query, matched_response, "intent", "keyword fallback")
+                    return jsonify({
+                        "response": matched_response,
+                        "sentiment": sentiment,
+                        "suggested_query": suggested_query,
+                        "synonyms": synonyms
+                    })
+
+        # ✅ Step 3: Pinecone check
         stored_response = retrieve_from_pinecone(user_query)
         if stored_response:
             cache_set_response(user_query, stored_response)
@@ -196,40 +270,11 @@ def handle_query():
                 "synonyms": synonyms
             })
 
-                        # ✅ Step 3: Fuzzy Match Intents Before Calling OpenAI
-        user_query_lower = user_query.lower()
-
-        best_tag = None
-        highest_ratio = 0.0
-
-        for intent in intents:
-            tag = intent.get("tag")
-            for pattern in intent.get("patterns", []):
-                pattern_lower = pattern.lower()
-                ratio = difflib.SequenceMatcher(None, user_query_lower, pattern_lower).ratio()
-                if ratio > highest_ratio:
-                    highest_ratio = ratio
-                    best_tag = tag
-
-        # ✅ If fuzzy match confidence is strong enough (e.g. > 0.7), return canned response
-        if highest_ratio > 0.7 and best_tag:
-            matched_response = responses.get(best_tag, "I'm not sure how to respond to that.")
-            if isinstance(matched_response, list):
-                matched_response = matched_response[0]
-
-            log_to_json(user_query, matched_response, "intent-fuzzy", "matched")
-            return jsonify({
-                "response": matched_response,
-                "sentiment": sentiment,
-                "suggested_query": suggested_query,
-                "synonyms": synonyms
-            })
-
-
         # ✅ Step 4: Query OpenAI
         response = get_openai_response(user_query)
         response = response if isinstance(response, str) else "⚠️ Unexpected response format."
 
+        # ✅ Store and Log
         store_query_in_pinecone(user_query, response)
         cache_set_response(user_query, response)
         log_to_json(user_query, response, "openai", "success")
@@ -241,11 +286,11 @@ def handle_query():
             "synonyms": synonyms
         })
 
-
     except json.JSONDecodeError as e:
         return jsonify({"error": f"Invalid JSON format: {str(e)}"}), 400
     except Exception as e:
         return jsonify({"error": f"Unexpected error: {str(e)}"}), 500
+
 
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0', port=5001)

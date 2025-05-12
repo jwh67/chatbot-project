@@ -78,6 +78,10 @@
         "patterns": [
           "How much do your services cost?",
           "Pricing info",
+          "What’s your pricing",
+          "Tell me your pricing",
+          "What do you charge",
+          "Is it free or paid",
           "Cost of services?"
         ],
         "responses": [
