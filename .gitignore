@@ -35,6 +35,7 @@ mlflow-artifacts/
 htmlcov/
 apptest.py
 logs/chatbot_logs_*.json
+chatbot-ui/certs/
 
 # IDE-specific files
 .vscode/
